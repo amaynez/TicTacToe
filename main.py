@@ -2,6 +2,7 @@ import pygame as pyg
 import numpy as np
 import math
 import sys
+import random
 
 
 def draw_text(surf, text, size, x, y, color=(255, 255, 255)):
@@ -35,8 +36,8 @@ class Game:
         PLAYER = []
 
     def new_play(self, turn, x, y):
-        if self.state[x, y] == 0:
-            self.state[x, y] = turn
+        if self.state[y, x] == 0:
+            self.state[y, x] = turn
             PLAYER.append(Player(x, y, turn))
             all_sprites.add(PLAYER[-1])
             winner = self.check_winner()
@@ -46,15 +47,15 @@ class Game:
         return turn
 
     def check_winner(self):
-        for i in range(3):
-            for j in range(1, 3, 1):
-                if np.all(self.state[i, :] == j) or np.all(self.state[:, i] == j):
-                    return j
-        for j in range(1, 3, 1):
-            if np.all(self.state.diagonal() == j) or np.all(np.flipud(self.state).diagonal() == j):
-                return j
-        empty = np.where(self.state == 0)
-        if len(empty[0]) == 0:
+        for row_col in range(3):
+            for player in range(1, 3, 1):
+                if np.all(self.state[row_col, :] == player) or np.all(self.state[:, row_col] == player):
+                    return player
+        for player in range(1, 3, 1):
+            if np.all(self.state.diagonal() == player) or np.all(np.flipud(self.state).diagonal() == player):
+                return player
+        empty_cells = np.where(self.state == 0)
+        if len(empty_cells[0]) == 0:
             self.end_game(0)
         return 0
 
@@ -70,7 +71,7 @@ class Game:
                       WIDTH / 2, HEIGHT / 2, YELLOW)
         else:
             draw_text(screen, "Player " + str(winner) + ' won', 22,
-                      WIDTH / 2, HEIGHT / 2, YELLOW)
+                      WIDTH / 2, HEIGHT / 2, RED if winner == 1 else CYAN)
             Score[winner - 1] += 1
         draw_text(screen, "<Press any key to restart>", 18, WIDTH / 2, HEIGHT * 3 / 4, YELLOW)
         pyg.display.flip()
@@ -89,15 +90,105 @@ class Game:
                     waiting = False
                     self.new_game()
 
+    def self_play(self, turn):
+        # finish immediate threat from us (win)
+        # and block immediate threats (don't loose)
+        for player in range(2, 0, -1):
+            for row_col in range(3):
+                for col_row in range(3):
+                    if self.state[row_col, col_row] == 0 and \
+                            np.all(self.state[row_col, (np.arange(3) != col_row)] == player):
+                        turn = self.new_play(turn, col_row, row_col)
+                        return turn
+                    if self.state[col_row, row_col] == 0 and \
+                            np.all(self.state[(np.arange(3) != col_row), row_col] == player):
+                        turn = self.new_play(turn, row_col, col_row)
+                        return turn
+                diagonal = np.diagonal(self.state)
+                if self.state[row_col, row_col] == 0 and \
+                        np.all(diagonal[(np.arange(3) != row_col)] == player):
+                    turn = self.new_play(turn, row_col, row_col)
+                    return turn
+                diagonal = np.diagonal(np.flipud(self.state))
+                if self.state[2-row_col, row_col] == 0 and \
+                        np.all(diagonal[(np.arange(3) != row_col)] == player):
+                    turn = self.new_play(turn, row_col, 2-row_col)
+                    return turn
+
+        # else check for corner threats
+        if self.state[0, 0] == 1 and \
+            self.state[2, 2] == 1 and \
+                np.all(self.state[0, (1, 2)] == 0) and \
+                np.all(self.state[(0, 1), 2] == 0) and \
+                np.all(self.state[(1, 2), 0] == 0) and \
+                np.all(self.state[2, (0, 1)]) == 0:
+            turn = self.new_play(turn, 1, 0)
+            return turn
+        if self.state[0, 2] == 1 and \
+            self.state[2, 0] == 1 and \
+                np.all(self.state[0, (0, 1)] == 0) and \
+                np.all(self.state[(1, 2), 2] == 0) and \
+                np.all(self.state[(0, 1), 0] == 0) and \
+                np.all(self.state[2, (1, 2)]) == 0:
+            turn = self.new_play(turn, 1, 2)
+            return turn
+
+        # else check for center corner threat
+        if self.state[0, 2] == 0 and self.state[1, 1] == 1 and self.state[2, 2] == 1:
+            turn = self.new_play(turn, 2, 0)
+            return turn
+
+        # else go for possible simultaneous threat
+        # and block possible simultaneous threats
+        for player in range(2, 0, -1):
+            for row_col in range(3):
+                for col_row in range(3):
+                    if self.state[row_col, col_row] == player and \
+                            np.all(self.state[row_col, (np.arange(3) != col_row)] == 0):
+                        p = [p for p in range(3) if p != col_row]
+                        for i in p:
+                            q = [q for q in range(3) if q != row_col]
+                            for j in q:
+                                if self.state[j, i] == player and \
+                                        np.all(self.state[(np.arange(3) != j), i] == 0):
+                                    turn = self.new_play(turn, i, row_col)
+                                    return turn
+
+        # else play center if possible
+        if self.state[1, 1] == 0:
+            turn = self.new_play(turn, 1, 1)
+            return turn
+
+        # else play corner
+        if self.state[0, 0] == 0:
+            turn = self.new_play(turn, 0, 0)
+            return turn
+        if self.state[0, 2] == 0:
+            turn = self.new_play(turn, 2, 0)
+            return turn
+        if self.state[2, 0] == 0:
+            turn = self.new_play(turn, 0, 2)
+            return turn
+        if self.state[2, 2] == 0:
+            turn = self.new_play(turn, 2, 2)
+            return turn
+
+        # else play random move
+        empty_cells = np.where(self.state == 0)
+        choice = random.choice(range(0, len(empty_cells[0])))
+        x = empty_cells[1][choice]
+        y = empty_cells[0][choice]
+        turn = self.new_play(turn, x, y)
+        return turn
+
 
 class Player(pyg.sprite.Sprite):
     def __init__(self, x, y, turn):
         pyg.sprite.Sprite.__init__(self)
-        self.image = pyg.transform.scale(images[turn-1], (round(WIDTH / 6), round(HEIGHT / 6)))
+        self.image = pyg.transform.scale(images[turn - 1], (round(WIDTH / 6), round(HEIGHT / 6)))
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH / 10 * (x * 2 + 3), HEIGHT / 10 * (y * 2 + 3))
-
 
 WIDTH = 480
 HEIGHT = 480
@@ -169,6 +260,7 @@ while running:
                        round(HEIGHT / 20 * 3)),
                       5,
                       8)
+        turn = game.self_play(turn)
     draw_text(screen, str(Score[0]), 64, WIDTH / 20 * 2.5, HEIGHT / 20 * 2.5, RED)
     draw_text(screen, str(Score[1]), 64, WIDTH / 20 * 17.5, HEIGHT / 20 * 2.5, CYAN)
     all_sprites.draw(screen)
