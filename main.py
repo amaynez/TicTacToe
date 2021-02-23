@@ -5,6 +5,17 @@ import sys
 import random
 
 
+WIDTH = 480
+HEIGHT = 480
+FPS = 30
+
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREY = (185, 185, 185)
+YELLOW = (255, 255, 0)
+CYAN = (0, 255, 255)
+
+
 def draw_text(surf, text, size, x, y, color=(255, 255, 255)):
     font = pyg.font.Font(font_name, size)
     text_surface = font.render(text, True, color)
@@ -29,17 +40,17 @@ class Game:
         self.state = np.zeros((3, 3), np.int8)
 
     def new_game(self):
-        global PLAYER
+        global PLAY_SPRITES
         game.state = np.zeros((3, 3), np.int8)
-        for player in PLAYER:
+        for player in PLAY_SPRITES:
             player.kill()
         PLAYER = []
 
     def new_play(self, turn, x, y):
         if self.state[y, x] == 0:
             self.state[y, x] = turn
-            PLAYER.append(Player(x, y, turn))
-            all_sprites.add(PLAYER[-1])
+            PLAY_SPRITES.append(PlayerSprite(x, y, turn))
+            all_sprites.add(PLAY_SPRITES[-1])
             winner = self.check_winner()
             if winner > 0:
                 self.end_game(winner)
@@ -67,13 +78,13 @@ class Game:
         screen.blit(s, (0, 0))
         draw_text(screen, "Game Over!", 64, WIDTH / 2, HEIGHT / 4, YELLOW)
         if winner == 0:
-            draw_text(screen, "It was a tie! ", 22,
+            draw_text(screen, "It was a tie! ", 32,
                       WIDTH / 2, HEIGHT / 2, YELLOW)
         else:
-            draw_text(screen, "Player " + str(winner) + ' won', 22,
+            draw_text(screen, "Player " + str(winner) + ' won', 32,
                       WIDTH / 2, HEIGHT / 2, RED if winner == 1 else CYAN)
             Score[winner - 1] += 1
-        draw_text(screen, "<Press any key to restart>", 18, WIDTH / 2, HEIGHT * 3 / 4, YELLOW)
+        draw_text(screen, "<Press any key to restart>", 24, WIDTH / 2, HEIGHT * 3 / 4, YELLOW)
         pyg.display.flip()
         waiting = True
         while waiting:
@@ -90,25 +101,31 @@ class Game:
                     waiting = False
                     self.new_game()
 
-    def self_play(self, turn):
+    def AI_play(self, turn):
+        adversary = 1 if turn == 2 else 2
+
         # finish immediate threat from us (win)
-        # and block immediate threats (don't loose)
+        # and block immediate threats from adversary (don't loose)
         for player in range(2, 0, -1):
             for row_col in range(3):
                 for col_row in range(3):
+                    # check rows
                     if self.state[row_col, col_row] == 0 and \
                             np.all(self.state[row_col, (np.arange(3) != col_row)] == player):
                         turn = self.new_play(turn, col_row, row_col)
                         return turn
+                    # check cols
                     if self.state[col_row, row_col] == 0 and \
                             np.all(self.state[(np.arange(3) != col_row), row_col] == player):
                         turn = self.new_play(turn, row_col, col_row)
                         return turn
+                # check main diagonal
                 diagonal = np.diagonal(self.state)
                 if self.state[row_col, row_col] == 0 and \
                         np.all(diagonal[(np.arange(3) != row_col)] == player):
                     turn = self.new_play(turn, row_col, row_col)
                     return turn
+                # check secondary diagonal
                 diagonal = np.diagonal(np.flipud(self.state))
                 if self.state[2-row_col, row_col] == 0 and \
                         np.all(diagonal[(np.arange(3) != row_col)] == player):
@@ -116,30 +133,25 @@ class Game:
                     return turn
 
         # else check for corner threats
-        if self.state[0, 0] == 1 and \
-            self.state[2, 2] == 1 and \
-                np.all(self.state[0, (1, 2)] == 0) and \
-                np.all(self.state[(0, 1), 2] == 0) and \
-                np.all(self.state[(1, 2), 0] == 0) and \
-                np.all(self.state[2, (0, 1)]) == 0:
-            turn = self.new_play(turn, 1, 0)
-            return turn
-        if self.state[0, 2] == 1 and \
-            self.state[2, 0] == 1 and \
-                np.all(self.state[0, (0, 1)] == 0) and \
-                np.all(self.state[(1, 2), 2] == 0) and \
-                np.all(self.state[(0, 1), 0] == 0) and \
-                np.all(self.state[2, (1, 2)]) == 0:
-            turn = self.new_play(turn, 1, 2)
-            return turn
+        for i in range(2):
+            if self.state[0, i*2] == adversary and \
+                    self.state[2, 2-(i*2)] == adversary and \
+                    np.all(self.state[0, (1-i, 2-i)] == 0) and \
+                    np.all(self.state[(i, 1+i), 2] == 0) and \
+                    np.all(self.state[(1-i, 2-i), 0] == 0) and \
+                    np.all(self.state[2, (i, 1+i)]) == 0:
+                turn = self.new_play(turn, 1, 0)
+                return turn
 
         # else check for center corner threat
-        if self.state[0, 2] == 0 and self.state[1, 1] == 1 and self.state[2, 2] == 1:
+        if self.state[0, 2] == 0 and \
+            self.state[1, 1] == adversary and \
+                self.state[2, 2] == adversary:
             turn = self.new_play(turn, 2, 0)
             return turn
 
-        # else go for possible simultaneous threat
-        # and block possible simultaneous threats
+        # else go for possible simultaneous threat from us
+        # and block possible simultaneous threats from adversary
         for player in range(2, 0, -1):
             for row_col in range(3):
                 for col_row in range(3):
@@ -154,35 +166,28 @@ class Game:
                                     turn = self.new_play(turn, i, row_col)
                                     return turn
 
-        # else play center if possible
+        # else play center
         if self.state[1, 1] == 0:
             turn = self.new_play(turn, 1, 1)
             return turn
 
         # else play corner
-        if self.state[0, 0] == 0:
-            turn = self.new_play(turn, 0, 0)
-            return turn
-        if self.state[0, 2] == 0:
-            turn = self.new_play(turn, 2, 0)
-            return turn
-        if self.state[2, 0] == 0:
-            turn = self.new_play(turn, 0, 2)
-            return turn
-        if self.state[2, 2] == 0:
-            turn = self.new_play(turn, 2, 2)
-            return turn
+        for y in range(0, 3, 2):
+            for x in range(0, 3, 2):
+                if self.state[y, x] == 0:
+                    turn = self.new_play(turn, x, y)
+                    return turn
 
-        # else play random move
+        # else play random move from the available cells
         empty_cells = np.where(self.state == 0)
-        choice = random.choice(range(0, len(empty_cells[0])))
+        choice = random.choice(range(len(empty_cells[0])))
         x = empty_cells[1][choice]
         y = empty_cells[0][choice]
         turn = self.new_play(turn, x, y)
         return turn
 
 
-class Player(pyg.sprite.Sprite):
+class PlayerSprite(pyg.sprite.Sprite):
     def __init__(self, x, y, turn):
         pyg.sprite.Sprite.__init__(self)
         self.image = pyg.transform.scale(images[turn - 1], (round(WIDTH / 6), round(HEIGHT / 6)))
@@ -190,16 +195,6 @@ class Player(pyg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH / 10 * (x * 2 + 3), HEIGHT / 10 * (y * 2 + 3))
 
-WIDTH = 480
-HEIGHT = 480
-FPS = 30
-
-# define colors
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-GREY = (185, 185, 185)
-YELLOW = (255, 255, 0)
-CYAN = (0, 255, 255)
 
 # initialize pygame and create window
 pyg.init()
@@ -212,11 +207,11 @@ all_sprites = pyg.sprite.Group()
 # load images and font
 images = [pyg.image.load('cross.png').convert(),
           pyg.image.load('circle.png').convert()]
-font_name = pyg.font.match_font('Arial Bold')
+font_name = pyg.font.match_font('Calibri')
 
 # initialize game
 game = Game()
-PLAYER = []
+PLAY_SPRITES = []
 turn = 1
 Score = [0, 0]
 
@@ -260,7 +255,7 @@ while running:
                        round(HEIGHT / 20 * 3)),
                       5,
                       8)
-        turn = game.self_play(turn)
+        turn = game.AI_play(turn)
     draw_text(screen, str(Score[0]), 64, WIDTH / 20 * 2.5, HEIGHT / 20 * 2.5, RED)
     draw_text(screen, str(Score[1]), 64, WIDTH / 20 * 17.5, HEIGHT / 20 * 2.5, CYAN)
     all_sprites.draw(screen)

@@ -1,16 +1,13 @@
 import numpy as np
 
-
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
-
 
 def d_sigmoid(x):
     return x * (1 - x)
 
-
 class NeuralNetwork:
-    def __init__(self, inputs, hidden, outputs, learning_rate):
+    def __init__(self, inputs, hidden, outputs, learning_rate=0.1):
         self.inputs = inputs
         if isinstance(hidden, int):
             hidden = [hidden]
@@ -85,18 +82,16 @@ class NeuralNetwork:
                                      results[idx].T)
             self.bias[idx + 1] -= (error[idx + 1] * d_sigmoid(results[idx + 1])) * self.learning_rate
 
-    def RL_train(self, inputs, cost, batch_size):
-        # separate data into batches
+    def RL_train(self, inputs, cost, results):
+        pass
+        # prepare data for processing
 
         # loop all the batches
 
-            # loop per batch
+        # loop per batch
 
-                # calculate cost function per iteration
+        # calculate value function per iteration
 
-            # once the batch is finished calculate the updates for weights
+        # once the batch is finished calculate the updates for weights
 
-            # update weights & biases
-
-
-
+        # update weights & biases
