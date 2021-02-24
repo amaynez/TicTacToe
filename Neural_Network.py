@@ -82,7 +82,7 @@ class NeuralNetwork:
                                      results[idx].T)
             self.bias[idx + 1] -= (error[idx + 1] * d_sigmoid(results[idx + 1])) * self.learning_rate
 
-    def RL_train(self, inputs, cost, results):
+    def RL_train(self, replay_memory):
         pass
         # prepare data for processing
 
