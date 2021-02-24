@@ -126,7 +126,12 @@ while running:
         state_before_action = game.state.copy()
         while previous_turn == game.turn:
             termination_state, sprite_params = agent.play(previous_turn, game)
-            replay_memory.memory.append(experience(state_before_action, agent.action, agent.reward, agent.next_state.copy()))
+            replay_memory.memory.append(
+                experience(
+                    state_before_action,
+                    agent.action,
+                    agent.reward,
+                    agent.next_state.copy()))
     else:
         pyg.draw.rect(screen, c.CYAN,
                       (round(c.WIDTH / 20 * 16),
