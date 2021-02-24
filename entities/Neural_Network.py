@@ -1,10 +1,15 @@
 import numpy as np
+import json
+from utilities import json_numpy
+
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
+
 def d_sigmoid(x):
     return x * (1 - x)
+
 
 class NeuralNetwork:
     def __init__(self, inputs, hidden, outputs, learning_rate=0.1):
@@ -31,6 +36,27 @@ class NeuralNetwork:
         for idx, hidden_col in enumerate(self.hidden):
             self.bias.append(np.random.uniform(-1, 1, size=(hidden_col, 1)))
         self.bias.append(np.random.uniform(-1, 1, size=(self.outputs, 1)))
+
+    def copy_from(self, neural_net):
+        self.weights = neural_net.weights
+        self.bias = neural_net.bias
+
+    def save_to_file(self, file_name='NeuralNet.json'):
+        json_file = {
+            'weights': self.weights,
+            'biases': self.bias}
+        with open(file_name, 'w') as file:
+            json.dump(
+                json_file,
+                file,
+                ensure_ascii=False,
+                cls=json_numpy.EncodeFromNumpy)
+
+    def load_from_file(self, file_name='NeuralNet.json'):
+        with open(file_name) as file:
+            json_file = json.load(file, cls=json_numpy.DecodeToNumpy)
+        self.weights = json_file['weights']
+        self.bias = json_file['biases']
 
     def forward_propagation(self, input_values, **kwargs):
         # create hidden results list for results matrices per hidden layer

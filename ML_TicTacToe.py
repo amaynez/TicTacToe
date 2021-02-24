@@ -1,10 +1,8 @@
 import pygame as pyg
 import math
 import sys
-import Game
-import agent
-import constants as c
-import Memory
+from utilities import constants as c
+from entities import Memory, Game, agent
 from recordtype import recordtype
 
 experience = recordtype('experience', 'state action reward next_state')
@@ -76,8 +74,8 @@ clock = pyg.time.Clock()
 all_sprites = pyg.sprite.Group()
 
 # load images and font
-images = [pyg.image.load('cross.png').convert(),
-          pyg.image.load('circle.png').convert()]
+images = [pyg.image.load('media/cross.png').convert(),
+          pyg.image.load('media/circle.png').convert()]
 font_name = pyg.font.match_font('Calibri')
 
 # initialize game
@@ -85,6 +83,8 @@ game = Game.Game()
 
 # create neural network
 agent = agent.Agent(c.INPUTS, c.HIDDEN_LAYERS, c.OUTPUTS)
+
+
 replay_memory = Memory.ReplayMemory(c.MEMORY_CAPACITY)
 
 # Game loop

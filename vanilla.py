@@ -205,8 +205,8 @@ clock = pyg.time.Clock()
 all_sprites = pyg.sprite.Group()
 
 # load images and font
-images = [pyg.image.load('cross.png').convert(),
-          pyg.image.load('circle.png').convert()]
+images = [pyg.image.load('media/cross.png').convert(),
+          pyg.image.load('media/circle.png').convert()]
 font_name = pyg.font.match_font('Calibri')
 
 # initialize game

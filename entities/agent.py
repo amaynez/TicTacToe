@@ -1,15 +1,19 @@
 import numpy as np
 import random
-import Neural_Network as nn
-from collections import namedtuple
+import entities.Neural_Network as nn
 import math
-import constants as c
-
+from utilities import constants as c
 
 class Agent:
-    def __init__(self, inputs, hidden_layers, outputs):
+    def __init__(self, inputs, hidden_layers, outputs, **kwargs):
         self.PolicyNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs)
+        if 'load' in kwargs.keys():
+            if kwargs.get('load') in ['yes', 'y', 'YES', 'Y', 1]:
+                self.PolicyNetwork.load_from_file()
+            else:
+                self.PolicyNetwork.load_from_file(kwargs.get('load'))
         self.TargetNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs)
+        self.TargetNetwork.copy_from(self.PolicyNetwork)
         self.state = []
         self.action = 0
         self.reward = 0
@@ -17,6 +21,18 @@ class Agent:
         self.adversary = 2
         self.NNet_player = 1
         self.current_step = 0
+
+    def save(self, file=''):
+        if file == '':
+            self.PolicyNetwork.save_to_file()
+        else:
+            self.PolicyNetwork.save_to_file(file)
+
+    def load(self, file=''):
+        if file == '':
+            self.PolicyNetwork.load_from_file()
+        else:
+            self.PolicyNetwork.load_from_file(file)
 
     def play(self, previous_turn, game):
         inputs = game.state
@@ -53,7 +69,7 @@ class Agent:
 
     def get_exploration_rate(self):
         return c.eEND + (c.eSTART - c.eEND) * \
-            math.exp(-1. * self.current_step * c.eDECAY)
+               math.exp(-1. * self.current_step * c.eDECAY)
 
     @staticmethod
     def split_rowcol(action):
