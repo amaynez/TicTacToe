@@ -1,6 +1,7 @@
 import numpy as np
 import json
 from utilities import json_numpy
+import utilities.constants as c
 
 
 def sigmoid(x):
@@ -20,22 +21,40 @@ class NeuralNetwork:
         self.outputs = outputs
         self.learning_rate = learning_rate
 
-        # create weights for first hidden layer (defined based on number of inputs)
+        # create weights and gradients for first hidden layer (defined based on number of inputs)
         self.weights = [np.random.uniform(-1, 1, size=(self.hidden[0], self.inputs))]
+        self.gradients = [np.zeros((self.hidden[0], self.inputs))]
 
-        # create weights for interior hidden layers (defined based on previous layer)
+        # create weights and gradients for interior hidden layers (defined based on previous layer)
         if self.hidden.ndim > 0:
             for idx, hidden_col in enumerate(self.hidden[1:]):
                 self.weights.append(np.random.uniform(-1, 1, size=(hidden_col, self.hidden[idx])))
+                self.gradients.append(np.zeros((hidden_col, self.hidden[idx])))
 
-        # create weights for output layer (defined based on number of outputs)
+        # create weights and gradients for output layer (defined based on number of outputs)
         self.weights.append(np.random.uniform(-1, 1, size=(self.outputs, self.hidden[-1],)))
+        self.gradients.append(np.zeros((self.outputs, self.hidden[-1],)))
 
         # create bias list of matrices (one per hidden layer and one for the output)
         self.bias = []
+        self.bias_gradients = []
         for idx, hidden_col in enumerate(self.hidden):
             self.bias.append(np.random.uniform(-1, 1, size=(hidden_col, 1)))
+            self.bias_gradients.append(np.zeros((hidden_col, 1)))
         self.bias.append(np.random.uniform(-1, 1, size=(self.outputs, 1)))
+        self.bias_gradients.append(np.zeros((self.outputs, 1)))
+
+        # create gradient matrices
+
+    def gradient_zeros(self):
+        self.gradients = [np.zeros((self.hidden[0], self.inputs))]
+        self.bias_gradients = [np.zeros((self.hidden[0], 1))]
+        if self.hidden.ndim > 0:
+            for idx, hidden_col in enumerate(self.hidden[1:]):
+                self.gradients.append(np.zeros((hidden_col, self.hidden[idx])))
+                self.bias_gradients.append(np.zeros((hidden_col, 1)))
+        self.gradients.append(np.zeros((self.outputs, self.hidden[-1])))
+        self.bias_gradients.append(np.zeros((self.outputs, 1)))
 
     def copy_from(self, neural_net):
         self.weights = neural_net.weights
@@ -108,16 +127,53 @@ class NeuralNetwork:
                                      results[idx].T)
             self.bias[idx + 1] -= (error[idx + 1] * d_sigmoid(results[idx + 1])) * self.learning_rate
 
-    def RL_train(self, replay_memory):
-        pass
-        # prepare data for processing
+    def calculate_gradient(self, inputs, targets):
+        # get the results including the hidden layers' (intermediate results)
+        results = self.forward_propagation(inputs, explicit='yes')
 
-        # loop all the batches
+        # prepare the targets and inputs for matrix operations
+        # targets = np.array(targets)[np.newaxis].T
+        input_values = np.array(inputs)[np.newaxis].T
 
-        # loop per batch
+        # calculate the error (outputs vs targets), index 0
+        error = [results[-1] - targets]
 
-        # calculate value function per iteration
+        # calculate the error of the hidden layers from last to first but insert in the correct order
+        for idx in range(len(results) - 2, -1, -1):
+            error.insert(0, np.matmul(self.weights[idx + 1].T, error[0]))
 
-        # once the batch is finished calculate the updates for weights
+        # modify weights and biases (input -> first hidden layer)
+        self.gradients[0] -= np.matmul((error[0] * d_sigmoid(results[0]) * self.learning_rate), input_values.T)
+        self.bias_gradients[0] -= (error[0] * d_sigmoid(results[0])) * self.learning_rate
 
-        # update weights & biases
+        # modify weights and biases (all subsequent hidden layers and output)
+        for idx, gradient_col in enumerate(self.gradients[1:]):
+            gradient_col -= np.matmul((error[idx + 1] * d_sigmoid(results[idx + 1]) * self.learning_rate),
+                                     results[idx].T)
+            self.bias_gradients[idx + 1] -= (error[idx + 1] * d_sigmoid(results[idx + 1])) * self.learning_rate
+
+    def apply_gradients(self):
+        for idx, gradient_col in enumerate(self.gradients):
+            self.weights[idx] += gradient_col / c.BATCH_SIZE
+            self.bias[idx] += self.bias_gradients[idx] / c.BATCH_SIZE
+        self.gradient_zeros()
+
+    def RL_train(self, replay_memory, target_network):
+        for experience in replay_memory:
+            # calculate max_Q2
+            experience.next_state = experience.next_state.reshape(self.inputs)
+            experience.state = experience.state.reshape(self.inputs)
+            results = target_network.forward_propagation(experience.next_state)
+            results = results[0]
+            max_q2 = np.max(results)
+
+            target_q = experience.reward + c.GAMMA*max_q2
+
+            # form targets matrix
+            targets = self.forward_propagation(experience.state)
+            targets = targets[0]
+            targets[experience.action, 0] = target_q
+
+            self.calculate_gradient(experience.state, targets)
+        print('.', end='')
+        self.apply_gradients()

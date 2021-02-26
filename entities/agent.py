@@ -4,6 +4,7 @@ import entities.Neural_Network as nn
 import math
 from utilities import constants as c
 
+
 class Agent:
     def __init__(self, inputs, hidden_layers, outputs, **kwargs):
         self.PolicyNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs)
@@ -18,8 +19,8 @@ class Agent:
         self.action = 0
         self.reward = 0
         self.next_state = []
-        self.adversary = 2
-        self.NNet_player = 1
+        self.adversary = 1
+        self.NNet_player = 2
         self.current_step = 0
 
     def save(self, file=''):
@@ -35,16 +36,18 @@ class Agent:
             self.PolicyNetwork.load_from_file(file)
 
     def play(self, previous_turn, game):
+        termination_state = 0
+        sprite_params = ()
         inputs = game.state
-        inputs = inputs.reshape(9)
+        inputs = inputs.reshape(c.INPUTS)
         results = self.PolicyNetwork.forward_propagation(inputs)
         results = results[0]
-        self.state = game.state
-        action, row, col = self.eGreedyStrategy(results, game)
-        self.action = action
-        termination_state, sprite_params = game.new_play(row, col)
-        self.reward = self.calculate_reward(previous_turn, game.turn, game.winner)
-        self.next_state = game.state
+        while previous_turn == game.turn:
+            action, row, col = self.eGreedyStrategy(results, game)
+            self.action = action
+            termination_state, sprite_params = game.new_play(row, col)
+            self.reward = self.calculate_reward(previous_turn, game.turn, game.winner)
+            self.next_state = game.state
         return termination_state, sprite_params
 
     def eGreedyStrategy(self, results, game):
@@ -92,7 +95,3 @@ class Agent:
         elif winner == self.NNet_player:
             return c.REWARD_WON_GAME
         return 0
-
-    def train_NNet(self, replay_memory):
-        self.PolicyNetwork.RL_train(replay_memory)
-        self.current_step = 0
