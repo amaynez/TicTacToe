@@ -137,7 +137,6 @@ def silent_training(game, agent, replay_memory):
     looses = 0
     ties = 0
     for i_episode in range(c.NUM_EPISODES):
-        print('Episode: ', i_episode)
         game.new_game()
         for time_step in count():
             previous_turn = game.turn
@@ -149,17 +148,11 @@ def silent_training(game, agent, replay_memory):
                 if len(replay_memory.memory) > 0:
                     replay_memory.memory[-1].next_state = game.state.copy()
             else:
-                state_before_action = game.state.copy()
-                termination_state, _ = agent.play(previous_turn, game)
-                replay_memory.push(
-                    experience(
-                        state_before_action,
-                        agent.action,
-                        agent.reward,
-                        agent.next_state.copy()))
+                termination_state, _ = agent.play(previous_turn, game, replay_memory, experience)
             if termination_state == -1:
-                wins += 1 if game.winner == 1 else 0
-                looses += 1 if game.winner == 2 else 0
+                if game.winner == agent.NNet_player:
+                    wins += 1
+                looses += 1 if game.winner == agent.adversary else 0
                 ties += 1 if game.winner == 3 else 0
                 game.new_game()
                 break
@@ -167,16 +160,17 @@ def silent_training(game, agent, replay_memory):
             # If we have enough experiences, start optimizing
             if replay_memory.can_sample_memory(c.BATCH_SIZE):
                 experiences = replay_memory.sample(c.BATCH_SIZE)
-                agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork)
+                agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience)
 
         episode_result.append([wins, looses, ties])
 
         if i_episode % c.TARGET_UPDATE == 0:
             agent.TargetNetwork.copy_from(agent.PolicyNetwork)
+        print('Episode: ', i_episode)
 
-    agent.PolicyNetwork.save_to_file()
     print(len(replay_memory.memory))
     print('w: ', wins, ' l:', looses, ' t:', ties)
+    agent.PolicyNetwork.save_to_file()
     print('Weights saved to file')
 
 
@@ -202,6 +196,8 @@ experience = recordtype('experience', 'state action reward next_state')
 agent = agent.Agent(c.INPUTS, c.HIDDEN_LAYERS, c.OUTPUTS)
 replay_memory = Memory.ReplayMemory(c.MEMORY_CAPACITY)
 agent.PolicyNetwork.load_from_file()
+agent.TargetNetwork.copy_from(agent.PolicyNetwork)
+print('weights loaded from file')
 
 if VISUAL:
     pygame_loop()

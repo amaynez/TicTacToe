@@ -7,13 +7,13 @@ from utilities import constants as c
 
 class Agent:
     def __init__(self, inputs, hidden_layers, outputs, **kwargs):
-        self.PolicyNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs)
+        self.PolicyNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs, c.LEARNING_RATE)
         if 'load' in kwargs.keys():
             if kwargs.get('load') in ['yes', 'y', 'YES', 'Y', 1]:
                 self.PolicyNetwork.load_from_file()
             else:
                 self.PolicyNetwork.load_from_file(kwargs.get('load'))
-        self.TargetNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs)
+        self.TargetNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs, c.LEARNING_RATE)
         self.TargetNetwork.copy_from(self.PolicyNetwork)
         self.state = []
         self.action = 0
@@ -35,19 +35,26 @@ class Agent:
         else:
             self.PolicyNetwork.load_from_file(file)
 
-    def play(self, previous_turn, game):
+    def play(self, previous_turn, game, replay_memory, experience):
         termination_state = 0
         sprite_params = ()
         inputs = game.state
         inputs = inputs.reshape(c.INPUTS)
         results = self.PolicyNetwork.forward_propagation(inputs)
         results = results[0]
+        state_before_action = game.state.copy()
         while previous_turn == game.turn:
             action, row, col = self.eGreedyStrategy(results, game)
             self.action = action
             termination_state, sprite_params = game.new_play(row, col)
             self.reward = self.calculate_reward(previous_turn, game.turn, game.winner)
             self.next_state = game.state
+            replay_memory.push(
+                experience(
+                    state_before_action,
+                    self.action,
+                    self.reward,
+                    self.next_state.copy()))
         return termination_state, sprite_params
 
     def eGreedyStrategy(self, results, game):
@@ -94,4 +101,6 @@ class Agent:
             return c.REWARD_LOST_GAME
         elif winner == self.NNet_player:
             return c.REWARD_WON_GAME
+        elif winner == 3:
+            return c.REWARD_TIE_GAME
         return 0
