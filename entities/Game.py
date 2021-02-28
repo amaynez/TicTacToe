@@ -45,7 +45,7 @@ class Game:
 
         # finish immediate threat from us (win)
         # and block immediate threats from adversary (don't loose)
-        for player in range(2, 0, -1):
+        for player in range(3 - adversary, 3 if adversary == 2 else 0, 1 if adversary == 2 else -1):
             for row_col in range(3):
                 for col_row in range(3):
                     # check rows
@@ -85,7 +85,7 @@ class Game:
 
         # else go for possible simultaneous threat from us
         # and block possible simultaneous threats from adversary
-        for player in range(2, 0, -1):
+        for player in range(3 - adversary, 3 if adversary == 2 else 0, 1 if adversary == 2 else -1):
             for row_col in range(3):
                 for col_row in range(3):
                     if self.state[row_col, col_row] == player and \

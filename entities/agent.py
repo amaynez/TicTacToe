@@ -6,14 +6,14 @@ from utilities import constants as c
 
 
 class Agent:
-    def __init__(self, inputs, hidden_layers, outputs, **kwargs):
-        self.PolicyNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs, c.LEARNING_RATE)
+    def __init__(self, inputs, hidden_layers, outputs, learning_rate, **kwargs):
+        self.PolicyNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs, learning_rate)
         if 'load' in kwargs.keys():
             if kwargs.get('load') in ['yes', 'y', 'YES', 'Y', 1]:
                 self.PolicyNetwork.load_from_file()
             else:
                 self.PolicyNetwork.load_from_file(kwargs.get('load'))
-        self.TargetNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs, c.LEARNING_RATE)
+        self.TargetNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs, learning_rate)
         self.TargetNetwork.copy_from(self.PolicyNetwork)
         self.state = []
         self.action = 0

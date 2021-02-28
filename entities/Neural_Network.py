@@ -81,18 +81,26 @@ class NeuralNetwork:
         json_file = {
             'weights': self.weights,
             'biases': self.bias}
-        with open(file_name, 'w') as file:
-            json.dump(
-                json_file,
-                file,
-                ensure_ascii=False,
-                cls=json_numpy.EncodeFromNumpy)
+        try:
+            with open(file_name, 'w') as file:
+                json.dump(
+                    json_file,
+                    file,
+                    ensure_ascii=False,
+                    cls=json_numpy.EncodeFromNumpy)
+                print('weights saved to file')
+        except OSError:
+            print('cannot save to ', file)
 
     def load_from_file(self, file_name='NeuralNet.json'):
-        with open(file_name) as file:
-            json_file = json.load(file, cls=json_numpy.DecodeToNumpy)
-        self.weights = json_file['weights']
-        self.bias = json_file['biases']
+        try:
+            with open(file_name) as file:
+                json_file = json.load(file, cls=json_numpy.DecodeToNumpy)
+                print('weights loaded from file')
+                self.weights = json_file['weights']
+                self.bias = json_file['biases']
+        except:
+            print('cannot open ', file_name)
 
     def forward_propagation(self, input_values, **kwargs):
         # create hidden results list for results matrices per hidden layer
@@ -154,30 +162,32 @@ class NeuralNetwork:
         # prepare the inputs for matrix operations
         input_values = np.array(inputs)[np.newaxis].T
 
-        # calculate the error (outputs vs targets), index 0
-        error = [results[-1] - targets]
+        # calculate the error_matrix (targets vs outputs), index 0
+        error_matrix = [results[-1] - targets]
 
-        # calculate the error of the hidden layers from last to first but insert in the correct order
-        for idx in range(len(results) - 2, -1, -1):
-            error.insert(0, np.matmul(self.weights[idx + 1].T, error[0]))
+        # calculate the error_matrix of the hidden layers from last to first but insert in the correct order
+        for idx in range(len(results) - 1, 0, -1):
+            error_matrix.insert(0, np.matmul(self.weights[idx].T, error_matrix[0]))
 
         # modify weights and biases (input -> first hidden layer)
-        self.gradients[0] -= np.matmul((error[0] * d_activation(results[0]) * self.learning_rate), input_values.T)
-        self.bias_gradients[0] -= (error[0] * d_activation(results[0])) * self.learning_rate
+        self.gradients[0] += np.matmul((error_matrix[0] * d_activation(results[0])),
+                                       input_values.T)
+        self.bias_gradients[0] += (error_matrix[0] * d_activation(results[0]))
 
         # modify weights and biases (all subsequent hidden layers and output)
         for idx, gradient_col in enumerate(self.gradients[1:-1]):
-            gradient_col -= np.matmul((error[idx + 1] * d_activation(results[idx + 1]) * self.learning_rate),
+            gradient_col += np.matmul((error_matrix[idx + 1] * d_activation(results[idx + 1])),
                                       results[idx].T)
-            self.bias_gradients[idx + 1] -= (error[idx + 1] * d_activation(results[idx + 1])) * self.learning_rate
-        self.gradients[-1] -= np.matmul((error[-1] * d_activation(results[-1], True) * self.learning_rate),
+            self.bias_gradients[idx + 1] += (error_matrix[idx + 1] *
+                                             d_activation(results[idx + 1]))
+        self.gradients[-1] += np.matmul((error_matrix[-1] * d_activation(results[-1], True)),
                                         results[-2].T)
-        self.bias_gradients[-1] -= (error[-1] * d_activation(results[-1], True)) * self.learning_rate
+        self.bias_gradients[-1] += (error_matrix[-1] * d_activation(results[-1], True))
 
     def apply_gradients(self):
         for idx, gradient_col in enumerate(self.gradients):
-            self.weights[idx] += gradient_col / c.BATCH_SIZE
-            self.bias[idx] += self.bias_gradients[idx] / c.BATCH_SIZE
+            self.weights[idx] -= self.learning_rate * gradient_col / c.BATCH_SIZE
+            self.bias[idx] -= self.learning_rate * self.bias_gradients[idx] / c.BATCH_SIZE
         self.gradient_zeros()
 
     def RL_train(self, replay_memory, target_network, experience):
@@ -188,18 +198,18 @@ class NeuralNetwork:
         rewards = np.array(batch.reward)
         next_states = np.array(batch.next_state)
         eps = np.finfo(np.float32).eps.item()
-        rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
+        rewards_normalized = (rewards - rewards.mean()) / (rewards.std() + eps)
 
         for i in range(len(replay_memory)):
             # calculate max_Q2
             if rewards[i] in (c.REWARD_LOST_GAME, c.REWARD_WON_GAME, c.REWARD_TIE_GAME):
-                target_q = rewards[i]
+                target_q = rewards_normalized[i]
             else:
                 next_state = next_states[i].reshape(c.INPUTS)
-                results = target_network.forward_propagation(next_state)
-                results = results[0]
-                max_q2 = np.max(results)
-                target_q = rewards[i] + c.GAMMA * max_q2
+                results_q2 = target_network.forward_propagation(next_state)
+                results_q2 = results_q2[0]
+                max_q2 = np.max(results_q2)
+                target_q = rewards_normalized[i] + c.GAMMA * max_q2
 
             # form targets matrix
             state = states[i].reshape(c.INPUTS)
@@ -209,8 +219,7 @@ class NeuralNetwork:
 
             self.calculate_gradient(state, targets)
 
-        print('.', end='')
-        # for idx, gradient in enumerate(self.gradients):
-        #     print('Gradients ', str(idx), ': ', round(gradient.sum(), 3))
-
+        # print('.', end='')
         self.apply_gradients()
+        for idx, weight in enumerate(self.weights):
+            print('Weights sum ', str(idx), ': ', round(weight.sum(), 3))

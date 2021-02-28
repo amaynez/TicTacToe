@@ -171,7 +171,6 @@ def silent_training(game, agent, replay_memory):
     print(len(replay_memory.memory))
     print('w: ', wins, ' l:', looses, ' t:', ties)
     agent.PolicyNetwork.save_to_file()
-    print('Weights saved to file')
 
 
 if VISUAL:
@@ -193,11 +192,10 @@ game = Game.Game()
 
 # create neural network
 experience = recordtype('experience', 'state action reward next_state')
-agent = agent.Agent(c.INPUTS, c.HIDDEN_LAYERS, c.OUTPUTS)
+agent = agent.Agent(c.INPUTS, c.HIDDEN_LAYERS, c.OUTPUTS, c.LEARNING_RATE)
 replay_memory = Memory.ReplayMemory(c.MEMORY_CAPACITY)
 agent.PolicyNetwork.load_from_file()
 agent.TargetNetwork.copy_from(agent.PolicyNetwork)
-print('weights loaded from file')
 
 if VISUAL:
     pygame_loop()
