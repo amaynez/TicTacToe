@@ -5,6 +5,8 @@ from utilities import constants as c
 from entities import Memory, Game, agent
 from recordtype import recordtype
 from itertools import count
+import matplotlib.pyplot as plt
+import numpy as np
 
 VISUAL = False
 
@@ -132,7 +134,7 @@ def game_over_screen(winner):
 
 def silent_training(game, agent, replay_memory):
     termination_state = 0
-    episode_result = []
+    total_losses = []
     wins = 0
     looses = 0
     ties = 0
@@ -149,6 +151,13 @@ def silent_training(game, agent, replay_memory):
                     replay_memory.memory[-1].next_state = game.state.copy()
             else:
                 termination_state, _ = agent.play(previous_turn, game, replay_memory, experience)
+
+            # If we have enough experiences, start optimizing
+            if replay_memory.can_sample_memory(c.BATCH_SIZE):
+                experiences = replay_memory.sample(c.BATCH_SIZE)
+                loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience)
+                total_losses.append(loss)
+
             if termination_state == -1:
                 if game.winner == agent.NNet_player:
                     wins += 1
@@ -157,13 +166,6 @@ def silent_training(game, agent, replay_memory):
                 game.new_game()
                 break
 
-            # If we have enough experiences, start optimizing
-            if replay_memory.can_sample_memory(c.BATCH_SIZE):
-                experiences = replay_memory.sample(c.BATCH_SIZE)
-                agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience)
-
-        episode_result.append([wins, looses, ties])
-
         if i_episode % c.TARGET_UPDATE == 0:
             agent.TargetNetwork.copy_from(agent.PolicyNetwork)
         print('Episode: ', i_episode)
@@ -171,6 +173,17 @@ def silent_training(game, agent, replay_memory):
     print(len(replay_memory.memory))
     print('w: ', wins, ' l:', looses, ' t:', ties)
     agent.PolicyNetwork.save_to_file()
+
+    fig = plt.figure()
+    fig.canvas.set_window_title('Loss function across all episodes')
+    fig.set_size_inches(11, 6)
+    axs1 = fig.add_subplot(1, 1, 1)
+    x = np.linspace(0, len(total_losses), len(total_losses))
+    axs1.plot(x, total_losses, c='grey')
+    ma = np.convolve(total_losses, np.ones(32), 'valid') / 32
+    ma = np.concatenate((total_losses[:31], ma))
+    axs1.plot(x, ma, c='r')
+    plt.show()
 
 
 if VISUAL:

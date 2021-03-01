@@ -155,7 +155,7 @@ class NeuralNetwork:
                                       results[-2].T)
         self.bias[-1] -= (error[-1] * d_activation(results[-1], True)) * self.learning_rate
 
-    def calculate_gradient(self, inputs, targets):
+    def calculate_gradient_old(self, inputs, targets):
         # get the results including the hidden layers' (intermediate results)
         results = self.forward_propagation(inputs, explicit='yes')
 
@@ -184,14 +184,43 @@ class NeuralNetwork:
                                         results[-2].T)
         self.bias_gradients[-1] += (error_matrix[-1] * d_activation(results[-1], True))
 
+    def calculate_gradient(self, inputs, targets):
+        # get the results including the hidden layers' (intermediate results)
+        results = self.forward_propagation(inputs, explicit='yes')
+
+        # prepare the inputs for matrix operations
+        input_values = np.array(inputs)[np.newaxis].T
+
+        # calculate the derivative error_matrix (targets vs outputs), index 0
+        d_error_matrix = [((targets - results[-1]) * d_activation(results[-1], True)) / c.BATCH_SIZE]
+
+        # calculate the derivative error_matrix of the hidden layers from last to first but insert in the correct order
+        for idx in range(len(results) - 1, 0, -1):
+            d_error_matrix.insert(0, np.matmul(self.weights[idx].T,
+                                               d_error_matrix[0]
+                                               * d_activation(results[idx])))
+
+        # calculate the gradient for the weights that feed the output layer
+        self.gradients[-1] += np.matmul(d_error_matrix[-1], results[-2].T)
+        self.bias_gradients[-1] += d_error_matrix[-1]
+
+        # calculate the gradient for all subsequent hidden layers
+        for idx, gradient_col in enumerate(self.gradients[1:-1]):
+            gradient_col += np.matmul(d_error_matrix[idx + 1], results[idx].T)
+            self.bias_gradients[idx + 1] += d_error_matrix[idx + 1]
+
+        # calculate the gradient for the first layer weights (input -> first hidden layer)
+        self.gradients[0] += np.matmul(d_error_matrix[0], input_values.T)
+        self.bias_gradients[0] += d_error_matrix[0]
+
     def apply_gradients(self):
         for idx, gradient_col in enumerate(self.gradients):
-            self.weights[idx] -= self.learning_rate * gradient_col / c.BATCH_SIZE
-            self.bias[idx] -= self.learning_rate * self.bias_gradients[idx] / c.BATCH_SIZE
+            self.weights[idx] -= self.learning_rate * gradient_col
+            self.bias[idx] -= self.learning_rate * self.bias_gradients[idx]
         self.gradient_zeros()
 
     def RL_train(self, replay_memory, target_network, experience):
-
+        loss = 0
         batch = experience(*zip(*replay_memory))
         states = np.array(batch.state)
         actions = np.array(batch.action)
@@ -215,11 +244,13 @@ class NeuralNetwork:
             state = states[i].reshape(c.INPUTS)
             targets = self.forward_propagation(state)
             targets = targets[0]
+            old_targets = targets.copy()
             targets[actions[i], 0] = target_q
-
+            loss += np.sum(((targets - old_targets)**2)/c.BATCH_SIZE)
             self.calculate_gradient(state, targets)
 
-        # print('.', end='')
+        print('.', end='')
         self.apply_gradients()
-        for idx, weight in enumerate(self.weights):
-            print('Weights sum ', str(idx), ': ', round(weight.sum(), 3))
+        return loss
+        # for idx, weight in enumerate(self.weights):
+        #     print('Weights sum ', str(idx), ': ', round(weight.sum(), 3))
