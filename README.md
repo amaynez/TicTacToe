@@ -4,4 +4,4 @@ This program implements a PyGame TicTacToe game that can be played by two humans
 
 While training the visuals of the game can be disabled to make training much faster.
 
-All the training parameters can be configured in the utils/constants.py module.
+All the training parameters can be configured in the utilities/constants.py module.
