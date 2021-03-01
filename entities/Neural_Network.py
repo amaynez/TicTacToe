@@ -29,6 +29,7 @@ def d_activation(x, output=False):
         elif c.ACTIVATION in ['ReLU', 'relu', 'RELU']:
             return 1 * (x > 0)
 
+
 class NeuralNetwork:
     def __init__(self, inputs, hidden, outputs, learning_rate=0.1):
         self.inputs = inputs
@@ -52,7 +53,7 @@ class NeuralNetwork:
         self.weights.append(np.random.uniform(-1, 1, size=(self.outputs, self.hidden[-1],)).astype(np.float128))
         self.gradients.append(np.zeros((self.outputs, self.hidden[-1],), np.float128))
 
-        # create bias list of matrices (one per hidden layer and one for the output)
+        # create bias and bias_gradients lists of matrices (one per hidden layer and one for the output)
         self.bias = []
         self.bias_gradients = []
         for idx, hidden_col in enumerate(self.hidden):
@@ -60,8 +61,6 @@ class NeuralNetwork:
             self.bias_gradients.append(np.zeros((hidden_col, 1), np.float128))
         self.bias.append(np.random.uniform(-1, 1, size=(self.outputs, 1)).astype(np.float128))
         self.bias_gradients.append(np.zeros((self.outputs, 1), np.float128))
-
-        # create gradient matrices
 
     def gradient_zeros(self):
         self.gradients = [np.zeros((self.hidden[0], self.inputs), np.float128)]
@@ -89,7 +88,7 @@ class NeuralNetwork:
                     ensure_ascii=False,
                     cls=json_numpy.EncodeFromNumpy)
                 print('weights saved to file')
-        except OSError:
+        except:
             print('cannot save to ', file)
 
     def load_from_file(self, file_name='NeuralNet.json'):
@@ -135,54 +134,25 @@ class NeuralNetwork:
         targets = np.array(targets)[np.newaxis].T
         input_values = np.array(inputs)[np.newaxis].T
 
-        # calculate the error (outputs vs targets), index 0
-        error = [results[-1] - targets]
+        # calculate the derivative error_matrix (targets vs outputs), index 0
+        d_error_matrix = [((targets - results[-1]) * d_activation(results[-1], True)) / c.BATCH_SIZE]
 
-        # calculate the error of the hidden layers from last to first but insert in the correct order
-        for idx in range(len(results) - 2, -1, -1):
-            error.insert(0, np.matmul(self.weights[idx + 1].T, error[0]))
-
-        # modify weights and biases (input -> first hidden layer)
-        self.weights[0] -= np.matmul((error[0] * d_activation(results[0]) * self.learning_rate), input_values.T)
-        self.bias[0] -= (error[0] * d_activation(results[0])) * self.learning_rate
-
-        # modify weights and biases (all subsequent hidden layers and output)
-        for idx, weight_cols in enumerate(self.weights[1:-1]):
-            weight_cols -= np.matmul((error[idx + 1] * d_activation(results[idx + 1]) * self.learning_rate),
-                                     results[idx].T)
-            self.bias[idx + 1] -= (error[idx + 1] * d_activation(results[idx + 1])) * self.learning_rate
-        self.weights[-1] -= np.matmul((error[-1] * d_activation(results[-1], True) * self.learning_rate),
-                                      results[-2].T)
-        self.bias[-1] -= (error[-1] * d_activation(results[-1], True)) * self.learning_rate
-
-    def calculate_gradient_old(self, inputs, targets):
-        # get the results including the hidden layers' (intermediate results)
-        results = self.forward_propagation(inputs, explicit='yes')
-
-        # prepare the inputs for matrix operations
-        input_values = np.array(inputs)[np.newaxis].T
-
-        # calculate the error_matrix (targets vs outputs), index 0
-        error_matrix = [results[-1] - targets]
-
-        # calculate the error_matrix of the hidden layers from last to first but insert in the correct order
+        # calculate the derivative error_matrix of the hidden layers from last to first but insert in the correct order
         for idx in range(len(results) - 1, 0, -1):
-            error_matrix.insert(0, np.matmul(self.weights[idx].T, error_matrix[0]))
+            d_error_matrix.insert(0, np.matmul(self.weights[idx].T, d_error_matrix[0] * d_activation(results[idx])))
 
-        # modify weights and biases (input -> first hidden layer)
-        self.gradients[0] += np.matmul((error_matrix[0] * d_activation(results[0])),
-                                       input_values.T)
-        self.bias_gradients[0] += (error_matrix[0] * d_activation(results[0]))
+        # calculate the gradient for the weights that feed the output layer
+        self.weights[-1] -= self.learning_rate * np.matmul(d_error_matrix[-1], results[-2].T)
+        self.bias[-1] -= self.learning_rate * d_error_matrix[-1]
 
-        # modify weights and biases (all subsequent hidden layers and output)
-        for idx, gradient_col in enumerate(self.gradients[1:-1]):
-            gradient_col += np.matmul((error_matrix[idx + 1] * d_activation(results[idx + 1])),
-                                      results[idx].T)
-            self.bias_gradients[idx + 1] += (error_matrix[idx + 1] *
-                                             d_activation(results[idx + 1]))
-        self.gradients[-1] += np.matmul((error_matrix[-1] * d_activation(results[-1], True)),
-                                        results[-2].T)
-        self.bias_gradients[-1] += (error_matrix[-1] * d_activation(results[-1], True))
+        # calculate the gradient for all subsequent hidden layers
+        for idx, weight_col in enumerate(self.weights[1:-1]):
+            weight_col -= self.learning_rate * np.matmul(d_error_matrix[idx + 1], results[idx].T)
+            self.bias[idx + 1] -= self.learning_rate * d_error_matrix[idx + 1]
+
+        # calculate the gradient for the first layer weights (input -> first hidden layer)
+        self.weights[0] -= self.learning_rate * np.matmul(d_error_matrix[0], input_values.T)
+        self.bias[0] -= self.learning_rate * d_error_matrix[0]
 
     def calculate_gradient(self, inputs, targets):
         # get the results including the hidden layers' (intermediate results)
@@ -196,9 +166,7 @@ class NeuralNetwork:
 
         # calculate the derivative error_matrix of the hidden layers from last to first but insert in the correct order
         for idx in range(len(results) - 1, 0, -1):
-            d_error_matrix.insert(0, np.matmul(self.weights[idx].T,
-                                               d_error_matrix[0]
-                                               * d_activation(results[idx])))
+            d_error_matrix.insert(0, np.matmul(self.weights[idx].T, d_error_matrix[0] * d_activation(results[idx])))
 
         # calculate the gradient for the weights that feed the output layer
         self.gradients[-1] += np.matmul(d_error_matrix[-1], results[-2].T)

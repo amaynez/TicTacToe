@@ -15,10 +15,6 @@ class Agent:
                 self.PolicyNetwork.load_from_file(kwargs.get('load'))
         self.TargetNetwork = nn.NeuralNetwork(inputs, hidden_layers, outputs, learning_rate)
         self.TargetNetwork.copy_from(self.PolicyNetwork)
-        self.state = []
-        self.action = 0
-        self.reward = 0
-        self.next_state = []
         self.adversary = 1
         self.NNet_player = 2
         self.current_step = 0
@@ -35,7 +31,7 @@ class Agent:
         else:
             self.PolicyNetwork.load_from_file(file)
 
-    def play(self, previous_turn, game, replay_memory, experience):
+    def play(self, previous_turn, game, replay_memory, experience, illegal_moves):
         termination_state = 0
         sprite_params = ()
         inputs = game.state
@@ -45,17 +41,17 @@ class Agent:
         state_before_action = game.state.copy()
         while previous_turn == game.turn:
             action, row, col = self.eGreedyStrategy(results, game)
-            self.action = action
             termination_state, sprite_params = game.new_play(row, col)
-            self.reward = self.calculate_reward(previous_turn, game.turn, game.winner)
-            self.next_state = game.state
+            reward = self.calculate_reward(previous_turn, game.turn, game.winner)
             replay_memory.push(
                 experience(
                     state_before_action,
-                    self.action,
-                    self.reward,
-                    self.next_state.copy()))
-        return termination_state, sprite_params
+                    action,
+                    reward,
+                    game.state.copy()))
+            if previous_turn == game.turn:
+                illegal_moves += 1
+        return termination_state, sprite_params, illegal_moves
 
     def eGreedyStrategy(self, results, game):
         exploration_rate = self.get_exploration_rate()
