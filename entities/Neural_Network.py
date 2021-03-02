@@ -162,18 +162,14 @@ class NeuralNetwork:
         input_values = np.array(inputs)[np.newaxis].T
 
         # calculate the derivative error_matrix (targets vs outputs), index 0
-        d_error_matrix = [((targets - results[-1]) * d_activation(results[-1], True)) / c.BATCH_SIZE]
+        d_error_matrix = [((results[-1] - targets) * d_activation(results[-1], True)) / c.BATCH_SIZE]
 
         # calculate the derivative error_matrix of the hidden layers from last to first but insert in the correct order
         for idx in range(len(results) - 1, 0, -1):
             d_error_matrix.insert(0, np.matmul(self.weights[idx].T, d_error_matrix[0] * d_activation(results[idx])))
 
-        # calculate the gradient for the weights that feed the output layer
-        self.gradients[-1] += np.matmul(d_error_matrix[-1], results[-2].T)
-        self.bias_gradients[-1] += d_error_matrix[-1]
-
         # calculate the gradient for all subsequent hidden layers
-        for idx, gradient_col in enumerate(self.gradients[1:-1]):
+        for idx, gradient_col in enumerate(self.gradients[1:]):
             gradient_col += np.matmul(d_error_matrix[idx + 1], results[idx].T)
             self.bias_gradients[idx + 1] += d_error_matrix[idx + 1]
 
@@ -182,9 +178,8 @@ class NeuralNetwork:
         self.bias_gradients[0] += d_error_matrix[0]
 
     def apply_gradients(self):
-        for idx, gradient_col in enumerate(self.gradients):
-            self.weights[idx] -= self.learning_rate * gradient_col
-            self.bias[idx] -= self.learning_rate * self.bias_gradients[idx]
+        self.weights -= self.learning_rate * np.array(self.gradients, dtype=object)
+        self.bias -= self.learning_rate * np.array(self.bias_gradients, dtype=object)
         self.gradient_zeros()
 
     def RL_train(self, replay_memory, target_network, experience):
@@ -214,11 +209,12 @@ class NeuralNetwork:
             targets = targets[0]
             old_targets = targets.copy()
             targets[actions[i], 0] = target_q
+            for idx, position in enumerate(state):
+                if position != 0:
+                    targets[idx, 0] = 0
             loss += np.sum(((targets - old_targets)**2)/c.BATCH_SIZE)
             self.calculate_gradient(state, targets)
 
         print('.', end='')
         self.apply_gradients()
         return loss
-        # for idx, weight in enumerate(self.weights):
-        #     print('Weights sum ', str(idx), ': ', round(weight.sum(), 3))

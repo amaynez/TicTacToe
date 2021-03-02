@@ -2,7 +2,6 @@ import numpy as np
 import random
 import utilities.constants as c
 
-
 class Game:
     def __init__(self):
         self.state = np.zeros((3, 3), np.int8)
@@ -67,7 +66,7 @@ class Game:
                     diagonal = np.diagonal(np.flipud(self.state))
                     if self.state[2 - row_col, row_col] == 0 and \
                             np.all(diagonal[(np.arange(3) != row_col)] == player):
-                        return self.new_play( 2 - row_col, row_col)
+                        return self.new_play(2 - row_col, row_col)
 
             # else check for corner threats
             for i in range(2):

@@ -8,8 +8,6 @@ from itertools import count
 import matplotlib.pyplot as plt
 import numpy as np
 
-VISUAL = False
-
 
 class PlayerSprite(pyg.sprite.Sprite):
     def __init__(self, row, col, turn):
@@ -73,7 +71,7 @@ def pygame_loop():
         draw_background()
         previous_turn = game.turn
 
-        if game.turn == 1:
+        if game.turn == agent.adversary:
             pyg.draw.rect(screen, c.RED,
                           (round(c.WIDTH / 20),
                            round(c.HEIGHT / 20),
@@ -87,8 +85,7 @@ def pygame_loop():
                            round(c.HEIGHT / 20),
                            round(c.WIDTH / 20 * 3),
                            round(c.HEIGHT / 20 * 3)), 5, 8)
-            termination_state, sprite_params = agent.play(previous_turn, game)
-            # termination_state, sprite_params = game.AI_play()
+            termination_state, sprite_params = agent.play_visual(previous_turn, game)
             game.PLAY_SPRITES.append(PlayerSprite(sprite_params[0], sprite_params[1], sprite_params[2]))
             all_sprites.add(game.PLAY_SPRITES[-1])
             all_sprites.draw(screen)
@@ -143,7 +140,7 @@ def silent_training(game, agent, replay_memory):
         illegal_moves = 0
         for _ in count():
             previous_turn = game.turn
-            if game.turn == 1:
+            if game.turn == agent.adversary:
                 termination_state, _ = game.AI_play()
                 if game.winner > 0:
                     replay_memory.memory[-1].reward =\
@@ -170,7 +167,9 @@ def silent_training(game, agent, replay_memory):
 
         if i_episode % c.TARGET_UPDATE == 0:
             agent.TargetNetwork.copy_from(agent.PolicyNetwork)
-        print('Episode: ', i_episode, ' Illegal Moves: ', illegal_moves)
+        print('\nEpisode: ', i_episode,
+              ';Illegal Moves: ', illegal_moves,
+              ';Replay Memory Size: ', len(replay_memory.memory))
         total_illegal_moves.append(illegal_moves)
 
     print('Total experiences recollected: ', len(replay_memory.memory))
@@ -183,21 +182,24 @@ def silent_training(game, agent, replay_memory):
     axs1 = fig.add_subplot(2, 1, 1)
     x = np.linspace(0, len(total_losses), len(total_losses))
     axs1.plot(x, total_losses, c='grey')
-    moving_average_period = 100
+    moving_average_period = 64
     ma = np.convolve(total_losses, np.ones(moving_average_period), 'valid') / moving_average_period
     ma = np.concatenate((total_losses[:moving_average_period-1], ma))
     axs1.plot(x, ma, c='r')
     axs1.set_ylabel('Loss (squared error)', fontsize=10, color='.25')
     axs1.set_xlabel('Training Round', fontsize=10, color='.25')
     axs2 = fig.add_subplot(2, 1, 2)
-    x = np.linspace(0, len(total_illegal_moves), len(total_illegal_moves))
-    axs2.plot(x, total_illegal_moves, c='r')
+    x2 = np.linspace(0, len(total_illegal_moves), len(total_illegal_moves))
+    axs2.plot(x2, total_illegal_moves, c='grey')
     axs2.set_ylabel('Illegal Moves', fontsize=10, color='.25')
     axs2.set_xlabel('Episode', fontsize=10, color='.25')
+    ma2 = np.convolve(total_illegal_moves, np.ones(moving_average_period), 'valid') / moving_average_period
+    ma2 = np.concatenate((total_illegal_moves[:moving_average_period-1], ma2))
+    axs2.plot(x2, ma2, c='r')
     plt.show()
 
 
-if VISUAL:
+if c.VISUAL:
     # initialize pygame and create window
     pyg.init()
     pyg.mixer.init()
@@ -221,10 +223,10 @@ replay_memory = Memory.ReplayMemory(c.MEMORY_CAPACITY)
 agent.PolicyNetwork.load_from_file()
 agent.TargetNetwork.copy_from(agent.PolicyNetwork)
 
-if VISUAL:
+if c.VISUAL:
     pygame_loop()
 
-if not VISUAL:
+if not c.VISUAL:
     silent_training(game, agent, replay_memory)
 
 pyg.quit()
