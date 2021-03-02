@@ -18,5 +18,5 @@ However, the model was still generating many illegal moves so I decided to modif
 
 <img src='Loss_function_and_Illegal_moves.png'></img>
 
-Nevertheless, the model was still performing quite poorly with winning only around 50% of games vs. a completely random player, where I expected to win above 90% of the time. This was after training 100,000 games, so I decided to keep training and see the results.
+Nevertheless, the model was still performing quite poorly with winning only around 50% of games vs. a completely random player, when I expected it to win above 90% of the time. This was after training 100,000 games, so I decided to keep training and see the results.
 
