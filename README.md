@@ -29,7 +29,7 @@ However, the model was still generating many illegal moves, so I decided to modi
 Nevertheless, the model was still performing quite poorly with winning only around 50% of games vs. a completely random player, when I expected it to win above 90% of the time. You can clearly see that the loose function was stagnating for a while. This was after training 100,000 games, so I decided to keep training and see the results:
 
 <img src='Loss_function_and_Illegal_moves2.png'></img>
-<c>Wins: 65.46% Losses: 30.32% Ties: 4.23%</c>
+<center>Wins: 65.46% Losses: 30.32% Ties: 4.23%</center>
 
 Note that when training again, the loss and illegal moves still are high in the beginning of the training round, and this is caused by the epsilon greedy strategy that prefers exploration (a completely random move) over exploitation, and this preference diminishes over time.
 
