@@ -14,9 +14,11 @@ At first the model was trained by playing vs. a "perfect" AI, meaning a hard cod
 
 <img src='Loss_function_across_all_episodes.png'></img>
 
-However, the model was still generating many illegal moves so I decided to modify the reinforcement learning algorithm to punish more the illegal moves. The change consisted in populating with zeros all the corresponding illegal moves for a given position at the target values to train the network. This seemed to work very well for diminishing the illegal moves:
+However, the model was still generating many illegal moves, so I decided to modify the reinforcement learning algorithm to punish more the illegal moves. The change consisted in populating with zeros all the corresponding illegal moves for a given position at the target values to train the network. This seemed to work very well for diminishing the illegal moves:
 
 <img src='Loss_function_and_Illegal_moves.png'></img>
 
 Nevertheless, the model was still performing quite poorly with winning only around 50% of games vs. a completely random player, when I expected it to win above 90% of the time. This was after training 100,000 games, so I decided to keep training and see the results.
+
+Note that when training again, the loss and illegal moves still are high in the beginning of the training round, and this is caused by the epsilon greedy strategy that prefers exploration (a completely random move) over exploitation, and this preference diminishes over time.
 
