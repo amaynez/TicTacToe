@@ -16,7 +16,7 @@ At first the model was trained by playing vs. a "perfect" AI, meaning a hard cod
 
 However, the model was still generating many illegal moves so I decided to modify the reinforcement learning algorithm to punish more the illegal moves. The change consisted in populating with zeros all the corresponding illegal moves for a given position at the target values to train the network. This seemed to work very well for diminishing the illegal moves:
 
-<img src='Loss_and_Illegal_moves.png'></img>
+<img src='Loss_function_and_Illegal_moves.png'></img>
 
 Nevertheless, the model was still performing quite poorly with winning only around 50% of games vs. a completely random player, where I expected to win above 90% of the time. This was after training 100,000 games, so I decided to keep training and see the results.
 
