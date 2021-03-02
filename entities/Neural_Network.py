@@ -23,11 +23,15 @@ def d_activation(x, output=False):
             return x * (1 - x)
         elif c.OUTPUT_ACTIVATION in ['ReLU', 'relu', 'RELU']:
             return 1 * (x > 0)
+        elif c.OUTPUT_ACTIVATION in ['linear', 'Linear', 'line']:
+            return x
     else:
         if c.ACTIVATION in ['sigmoid', 'Sigmoid', 'SIGMOID']:
             return x * (1 - x)
         elif c.ACTIVATION in ['ReLU', 'relu', 'RELU']:
             return 1 * (x > 0)
+        elif c.ACTIVATION in ['linear', 'Linear', 'line']:
+            return 1
 
 
 class NeuralNetwork:
