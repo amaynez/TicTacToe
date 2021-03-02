@@ -14,6 +14,8 @@ The training algorithm uses Deep Mind's DQN recommendations:
 
 # Neural Network Model
 
+<img src='Neural_Network_Topology.png'></img>
+
 The Neural Network chosen takes 9 inputs (the current state of the game) and outputs 9 Q values for each of the 9 squares in the board of the game (possible actions). Obviously some squares are illegal moves, hence while training there was a negative reward given to illegal moves hoping that the model would learn not to play illegal moves in a given position.
 
 After some trial and error I ended up with two hidden layers of 36 neurons each, all fully connected and activated via ReLu. The output layer was initially activated using sigmoid to ensure that we get a nice value between 0 and 1 that represents the QValue of a given state action pair.
