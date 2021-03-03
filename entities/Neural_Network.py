@@ -172,9 +172,11 @@ class NeuralNetwork:
         self.bias_gradients[0] += d_error_matrix[0]
 
     def cyclic_learning_rate(self, iteration):
+        learning_rate = c.LEARNING_RATE / (1 + iteration/c.LR_FACTOR)
+        max_lr = learning_rate * c.MAX_LR_FACTOR
         cycle = np.floor(1 + iteration / (2 * c.LR_STEP_SIZE))
         x = np.abs(iteration / c.LR_STEP_SIZE - 2 * cycle + 1)
-        self.learning_rate = c.LEARNING_RATE + (c.MAX_LR - c.LEARNING_RATE) * np.maximum(0, (1 - x))
+        self.learning_rate = learning_rate + (max_lr - learning_rate) * np.maximum(0, (1 - x))
 
     def apply_gradients(self, iteration):
         self.cyclic_learning_rate(iteration)
