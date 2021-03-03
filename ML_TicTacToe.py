@@ -131,6 +131,7 @@ def game_over_screen(winner):
 
 def silent_training(game, agent, replay_memory):
     total_losses = []
+    iteration = 0
     loss = 0
     total_illegal_moves = []
     wins = 0
@@ -139,7 +140,8 @@ def silent_training(game, agent, replay_memory):
     game.new_game()
     for i_episode in range(c.NUM_EPISODES):
         illegal_moves = 0
-        for _ in count():
+        for ct in count():
+            iteration += 1
             previous_turn = game.turn
             if game.turn == agent.adversary:
                 termination_state, _ = game.AI_play()
@@ -155,7 +157,7 @@ def silent_training(game, agent, replay_memory):
             # If we have enough experiences, start optimizing
             if replay_memory.can_sample_memory(c.BATCH_SIZE):
                 experiences = replay_memory.sample(c.BATCH_SIZE)
-                loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience)
+                loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience, iteration)
                 total_losses.append(loss)
 
             # if Game over, update counters and start a new game

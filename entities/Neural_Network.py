@@ -171,13 +171,19 @@ class NeuralNetwork:
         self.gradients[0] += np.matmul(d_error_matrix[0], input_values.T)
         self.bias_gradients[0] += d_error_matrix[0]
 
-    def apply_gradients(self):
+    def cyclic_learning_rate(self, iteration):
+        cycle = np.floor(1 + iteration / (2 * c.LR_STEP_SIZE))
+        x = np.abs(iteration / c.LR_STEP_SIZE - 2 * cycle + 1)
+        self.learning_rate = c.LEARNING_RATE + (c.MAX_LR - c.LEARNING_RATE) * np.maximum(0, (1 - x))
+
+    def apply_gradients(self, iteration):
+        self.cyclic_learning_rate(iteration)
         for idx, weight_col in enumerate(self.weights):
             weight_col -= self.learning_rate * np.array(self.gradients[idx])
             self.bias[idx] -= self.learning_rate * np.array(self.bias_gradients[idx])
         self.gradient_zeros()
 
-    def RL_train(self, replay_memory, target_network, experience):
+    def RL_train(self, replay_memory, target_network, experience, iteration):
         loss = 0
         batch = experience(*zip(*replay_memory))
         states = np.array(batch.state)
@@ -211,5 +217,5 @@ class NeuralNetwork:
             self.calculate_gradient(state, targets)
 
         print('.', end='')
-        self.apply_gradients()
+        self.apply_gradients(iteration)
         return loss

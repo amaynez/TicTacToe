@@ -51,6 +51,9 @@ After not getting the results I wanted, I decided to change the output activatio
 
 Initially I tested with only 1000 games to see if the new activation function was working, the loss function appears to be decreasing, however it reached a plateau around 1, hence still not learning as expected. I came across a technique by Brad Kenstler, Carl Thome and Jeremy Jordan (https://github.com/bckenstler/CLR) called Cyclical Learning Rate, that appears to solve some cases of stagnating loss functions in this type of networks. So I gave it a go using the Triangle 1 model.
 
+<img src='Loss_function_and_Illegal_moves5.png'></img>
+<center>Wins: 46.9% Losses: 38.5% Ties: 14.6%</center>
 
+With the cycling learning rate in place, still no luck with 1,000 rounds, I decided to restart with a fresh set of weights and biases and try with more games.
 
 
