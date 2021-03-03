@@ -1,5 +1,7 @@
 # Deep Q Learning TicTacToe
 
+<img src='Game_Screen.png'></img>
+
 This program implements a PyGame TicTacToe that can be played by two humans, by a human vs. an algorithmic AI, and a human vs. a Neural Network trained by playing against the algorithmic AI.
 
 While training, the visuals of the game can be disabled to make training much faster.
@@ -37,6 +39,11 @@ Note that when training again, the loss and illegal moves still are high in the 
 
 After this second round of 100,000 games, I can see that the loss function actually started to diminish, and the win rate ended up at 65%, so with little hope I decided to carry on and do another round of 100,000 games (about 2 hours in an i7 MacBook Pro):
 
+<img src='Loss_function_and_Illegal_moves3.png'></img>
+<center>Wins: 46.40% Losses: 41.33% Ties: 12.27%</center>
+
+As you can see in the chart, the calculated loss not even plateaued, but it seemed to increase a bit over time, which tells me the model is not learning anymore. This was confirmed by the win rate decreasing with respect of the previous round to a meek 46.4% that looks no better than a random player.
+
 After giving it some thought and not getting the results I wanted, I decided to change the output activation function to linear, since the output is supposed to be a Q value, and not a probability of action. After this change the results were:
 
-<img src='After_Linear_Activation_Change.png'></img>
+
