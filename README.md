@@ -1,6 +1,6 @@
 # Deep Q Learning TicTacToe
 
-<img src='Game_Screen.png'></img>
+<center><img src='Game_Screen.png' width="250" height="300"></img></center>
 
 This program implements a PyGame TicTacToe that can be played by two humans, by a human vs. an algorithmic AI, and a human vs. a Neural Network trained by playing against the algorithmic AI.
 
@@ -54,6 +54,34 @@ Initially I tested with only 1000 games to see if the new activation function wa
 <img src='Loss_function_and_Illegal_moves5.png'></img>
 <center>Wins: 46.9% Losses: 38.5% Ties: 14.6%</center>
 
-With the cycling learning rate in place, still no luck with 1,000 rounds, I decided to restart with a fresh set of weights and biases and try with more games.
+With the cycling learning rate in place, still no luck with 1,000 rounds, I decided to implement a constant diminishing learning rate as per the following formula:
+
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mi>&#x03B1;<!-- α --></mi>
+  <mo stretchy="false">(</mo>
+  <mi>t</mi>
+  <mo>+</mo>
+  <mn>1</mn>
+  <mo stretchy="false">)</mo>
+  <mo>=</mo>
+  <mfrac>
+    <mrow>
+      <mi>&#x03B1;<!-- α --></mi>
+      <mo stretchy="false">(</mo>
+      <mn>0</mn>
+      <mo stretchy="false">)</mo>
+    </mrow>
+    <mrow>
+      <mn>1</mn>
+      <mo>+</mo>
+      <mfrac>
+        <mi>t</mi>
+        <mi>m</mi>
+      </mfrac>
+    </mrow>
+  </mfrac>
+</math>
+
+Then restart with a fresh set of weights and biases and try with more games.
 
 
