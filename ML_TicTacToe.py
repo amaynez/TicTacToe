@@ -131,6 +131,7 @@ def game_over_screen(winner):
 
 def silent_training(game, agent, replay_memory):
     total_losses = []
+    loss = 0
     total_illegal_moves = []
     wins = 0
     looses = 0
@@ -169,7 +170,7 @@ def silent_training(game, agent, replay_memory):
             agent.TargetNetwork.copy_from(agent.PolicyNetwork)
         print('\nEpisode: ', i_episode,
               ';Illegal Moves: ', illegal_moves,
-              ';Replay Memory Size: ', len(replay_memory.memory))
+              ';Loss: ', loss)
         total_illegal_moves.append(illegal_moves)
 
     print('Total experiences recollected: ', len(replay_memory.memory))

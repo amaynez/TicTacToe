@@ -44,6 +44,13 @@ After this second round of 100,000 games, I can see that the loss function actua
 
 As you can see in the chart, the calculated loss not even plateaued, but it seemed to increase a bit over time, which tells me the model is not learning anymore. This was confirmed by the win rate decreasing with respect of the previous round to a meek 46.4% that looks no better than a random player.
 
-After giving it some thought and not getting the results I wanted, I decided to change the output activation function to linear, since the output is supposed to be a Q value, and not a probability of action. After this change the results were:
+After not getting the results I wanted, I decided to change the output activation function to linear, since the output is supposed to be a Q value, and not a probability of an action. After this change the results were:
+
+<img src='Loss_function_and_Illegal_moves4.png'></img>
+<center>Wins: 47.60% Losses: 39% Ties: 13.4%</center>
+
+Initially I tested with only 1000 games to see if the new activation function was working, the loss function appears to be decreasing, however it reached a plateau around 1, hence still not learning as expected. I came across a technique by Brad Kenstler, Carl Thome and Jeremy Jordan (https://github.com/bckenstler/CLR) called Cyclical Learning Rate, that appears to solve some cases of stagnating loss functions in this type of networks. So I gave it a go using the Triangle 1 model.
+
+
 
 

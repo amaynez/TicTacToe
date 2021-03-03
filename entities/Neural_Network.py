@@ -5,33 +5,23 @@ import utilities.constants as c
 
 
 def activation(x, output=False):
-    if output:
-        if c.OUTPUT_ACTIVATION in ['sigmoid', 'Sigmoid', 'SIGMOID']:
-            return 1 / (1 + np.exp(-x))
-        elif c.OUTPUT_ACTIVATION in ['ReLU', 'relu', 'RELU']:
-            return x * (x > 0)
-    else:
-        if c.ACTIVATION in ['sigmoid', 'Sigmoid', 'SIGMOID']:
-            return 1 / (1 + np.exp(-x))
-        elif c.ACTIVATION in ['ReLU', 'relu', 'RELU']:
-            return x * (x > 0)
+    activation_function = c.OUTPUT_ACTIVATION if output else c.ACTIVATION
+    if activation_function in ['sigmoid', 'Sigmoid', 'SIGMOID']:
+        return 1 / (1 + np.exp(-x))
+    elif activation_function in ['ReLU', 'relu', 'RELU']:
+        return x * (x > 0)
+    elif activation_function in ['linear', 'Linear', 'line']:
+        return x
 
 
 def d_activation(x, output=False):
-    if output:
-        if c.OUTPUT_ACTIVATION in ['sigmoid', 'Sigmoid', 'SIGMOID']:
-            return x * (1 - x)
-        elif c.OUTPUT_ACTIVATION in ['ReLU', 'relu', 'RELU']:
-            return 1 * (x > 0)
-        elif c.OUTPUT_ACTIVATION in ['linear', 'Linear', 'line']:
-            return x
-    else:
-        if c.ACTIVATION in ['sigmoid', 'Sigmoid', 'SIGMOID']:
-            return x * (1 - x)
-        elif c.ACTIVATION in ['ReLU', 'relu', 'RELU']:
-            return 1 * (x > 0)
-        elif c.ACTIVATION in ['linear', 'Linear', 'line']:
-            return 1
+    activation_function = c.OUTPUT_ACTIVATION if output else c.ACTIVATION
+    if activation_function in ['sigmoid', 'Sigmoid', 'SIGMOID']:
+        return x * (1 - x)
+    elif activation_function in ['ReLU', 'relu', 'RELU']:
+        return 1 * (x > 0)
+    elif activation_function in ['linear', 'Linear', 'line']:
+        return np.ones_like(x)
 
 
 class NeuralNetwork:
@@ -182,8 +172,9 @@ class NeuralNetwork:
         self.bias_gradients[0] += d_error_matrix[0]
 
     def apply_gradients(self):
-        self.weights -= self.learning_rate * np.array(self.gradients, dtype=object)
-        self.bias -= self.learning_rate * np.array(self.bias_gradients, dtype=object)
+        for idx, weight_col in enumerate(self.weights):
+            weight_col -= self.learning_rate * np.array(self.gradients[idx])
+            self.bias[idx] -= self.learning_rate * np.array(self.bias_gradients[idx])
         self.gradient_zeros()
 
     def RL_train(self, replay_memory, target_network, experience):
