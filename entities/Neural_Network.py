@@ -221,3 +221,26 @@ class NeuralNetwork:
         print('.', end='')
         self.apply_gradients(iteration)
         return loss
+
+    def learning_rate_range_test(self, batch, target_nn, experience, iteration):
+        min_loss_gradient = math.inf
+        learning_rates = []
+        lr_multiplier = float(c.MAX_LR_RANGE_TEST) * float(c.LEARNING_RATE)
+        snapshot = NeuralNetwork(c.INPUTS, c.HIDDEN_LAYERS, c.OUTPUTS, c.LEARNING_RATE)
+        snapshot.copy_from(self)
+        while snapshot.learning_rate <= c.MAX_LR_RANGE_TEST:
+            loss = snapshot.RL_train(batch, target_nn, experience, iteration)
+            if math.isnan(loss) or loss > min_loss_gradient * 4:
+                self.model.stop_training = True
+                return
+            loss_derivative = self.loss_derivative(loss)
+            learning_rates.append((loss_derivative, snapshot.learning_rate))
+            min_loss_gradient = min(loss_derivative, min_loss_gradient)
+            snapshot.learning_rate *= lr_multiplier
+        best_lr = min(learning_rates[n_skip_beginning:-n_skip_end])[1]
+        c.LEARNING_RATE = best_lr[1]
+        return
+
+    @staticmethod
+    def loss_derivative(loss):
+        return -(math.sqrt(loss*c.BATCH_SIZE) * 2) / c.BATCH_SIZE

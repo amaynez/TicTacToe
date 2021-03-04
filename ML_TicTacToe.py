@@ -140,7 +140,7 @@ def silent_training(game, agent, replay_memory):
     game.new_game()
     for i_episode in range(c.NUM_EPISODES):
         illegal_moves = 0
-        for ct in count():
+        for _ in count():
             iteration += 1
             previous_turn = game.turn
             if game.turn == agent.adversary:
@@ -159,6 +159,13 @@ def silent_training(game, agent, replay_memory):
                 experiences = replay_memory.sample(c.BATCH_SIZE)
                 loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience, iteration)
                 total_losses.append(loss)
+                # if len(total_losses) > 64:
+                #     last_losses = np.array(total_losses[-64:])
+                #     if np.average(np.sign(round(np.diff(last_losses), 1))) < 0.1:
+                #         agent.PolicyNetwork.learning_rate_range_test(experiences,
+                #                                                      agent.TargetNetwork,
+                #                                                      experience,
+                #                                                      iteration)
 
             # if Game over, update counters and start a new game
             if termination_state == -1:
@@ -174,6 +181,9 @@ def silent_training(game, agent, replay_memory):
               ';Illegal Moves: ', illegal_moves,
               ';Loss: ', loss)
         total_illegal_moves.append(illegal_moves)
+
+        # if i_episode % 10000:
+        #     agent.PolicyNetwork.save_to_file()
 
     print('Total experiences recollected: ', len(replay_memory.memory))
     print('w: ', wins, ' l:', looses, ' t:', ties)
