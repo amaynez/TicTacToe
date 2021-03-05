@@ -40,7 +40,7 @@ class Agent:
         results = results[0]
         state_before_action = game.state.copy()
         while previous_turn == game.turn:
-            action, row, col = self.eGreedyStrategy(results, game)
+            action, row, col, random_move = self.eGreedyStrategy(results, game)
             termination_state, sprite_params = game.new_play(row, col)
             reward = self.calculate_reward(previous_turn, game.turn, game.winner)
             replay_memory.push(
@@ -49,7 +49,7 @@ class Agent:
                     action,
                     reward,
                     game.state.copy()))
-            if previous_turn == game.turn:
+            if previous_turn == game.turn and random_move == 0:
                 illegal_moves += 1
         return termination_state, sprite_params, illegal_moves
 
@@ -64,27 +64,30 @@ class Agent:
             action = np.argmax(results)
             row, col = self.split_rowcol(action)
             termination_state, sprite_params = game.new_play(row, col)
+            results[action] = -math.inf
         return termination_state, sprite_params
 
     def eGreedyStrategy(self, results, game):
+        random_move = 0
         exploration_rate = self.get_exploration_rate()
         self.current_step += 1
         # Exploration V.S Exploitation
         if np.random.rand() < exploration_rate:
             action = np.random.choice(c.OUTPUTS)
             row, col = self.split_rowcol(action)
+            random_move = 1
         else:
             if np.max(results) > 0:
                 action = np.argmax(results)
                 row, col = self.split_rowcol(action)
-                results[action] = 0
+                results[action] = -math.inf
             else:
                 empty_cells = np.where(game.state == 0)
                 choice = random.choice(range(len(empty_cells[0])))
                 col = empty_cells[1][choice]
                 row = empty_cells[0][choice]
                 action = self.combine_rowcol(row, col)
-        return action, row, col
+        return action, row, col, random_move
 
     def get_exploration_rate(self):
         return c.eEND + (c.eSTART - c.eEND) * \
