@@ -3,7 +3,7 @@ HEIGHT = 480
 FPS = 120
 RANDOM_AI = True
 NNET_PLAYER = 2
-VISUAL = False
+VISUAL = True
 
 # Neural Network parameters
 INPUTS = 9
