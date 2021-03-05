@@ -3,7 +3,7 @@ HEIGHT = 480
 FPS = 120
 RANDOM_AI = True
 NNET_PLAYER = 2
-VISUAL = True
+VISUAL = False
 
 # Neural Network parameters
 INPUTS = 9
@@ -37,7 +37,7 @@ REWARD_TIE_GAME = 1
 # epsilon greedy strategy
 eSTART = 1
 eEND = 0.01
-eDECAY = 0.0001
+eDECAY = 0.01
 
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)

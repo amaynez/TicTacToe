@@ -184,7 +184,7 @@ class NeuralNetwork:
         self.learning_rate = learning_rate + (max_lr - learning_rate) * np.maximum(0, (1 - x))
 
     def apply_gradients(self, iteration):
-        # self.cyclic_learning_rate(iteration)
+        self.cyclic_learning_rate(iteration)
         for idx, weight_col in enumerate(self.weights):
             weight_col -= np.array(self.gradients[idx])/c.BATCH_SIZE
             self.bias[idx] -= np.array(self.bias_gradients[idx])/c.BATCH_SIZE

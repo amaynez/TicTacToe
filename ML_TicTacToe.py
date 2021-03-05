@@ -182,8 +182,8 @@ def silent_training(game, agent, replay_memory):
               ';Loss: ', loss)
         total_illegal_moves.append(illegal_moves)
 
-        # if i_episode % 10000:
-        #     agent.PolicyNetwork.save_to_file()
+        if i_episode % 10000 == 0:
+            agent.PolicyNetwork.save_to_file()
 
     print('Total experiences recollected: ', len(replay_memory.memory))
     print('w: ', wins, ' l:', looses, ' t:', ties)
