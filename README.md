@@ -1,7 +1,7 @@
 # Deep Q Learning TicTacToe
 https://amaynez.github.io/TicTacToe/
 
-<center><a href="https://amaynez.github.io/TicTacToe/"><img src='/media/Game_Screen.png' width="250" height="300"></a></center>
+<center><a href="https://amaynez.github.io/TicTacToe/"><img src='/media/Game_Screen.png' width="310" height="300"></a></center>
 
 This program implements a PyGame TicTacToe that can be played by two humans, by a human vs. an algorithmic AI, and a human vs. a Neural Network trained by playing against the algorithmic AI.
 
