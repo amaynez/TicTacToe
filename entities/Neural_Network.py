@@ -162,11 +162,11 @@ class NeuralNetwork:
         for idx in range(len(results) - 2, -1, -1):
             error.insert(0, np.matmul(self.weights[idx + 1].T, error[0]))
 
-        # modify weights and biases (input -> first hidden layer)
+        # modify weights and biases gradients (input -> first hidden layer)
         self.gradients[0] += np.matmul((error[0] * d_activation(results[0]) * self.learning_rate), input_values.T)
         self.bias_gradients[0] += (error[0] * d_activation(results[0])) * self.learning_rate
 
-        # modify weights and biases (all subsequent hidden layers and output)
+        # modify weights and biases gradients (all subsequent hidden layers and output)
         for idx, gradient_cols in enumerate(self.gradients[1:-1]):
             gradient_cols += np.matmul((error[idx + 1] * d_activation(results[idx + 1]) * self.learning_rate),
                                        results[idx].T)
