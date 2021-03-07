@@ -129,6 +129,30 @@ def game_over_screen(winner):
                 game.new_game()
 
 
+def play_wo_training(game, agent):
+    wins = 0
+    looses = 0
+    ties = 0
+    game.new_game()
+    for i_episode in range(c.NUM_EPISODES):
+        for _ in count():
+            previous_turn = game.turn
+            if game.turn == agent.adversary:
+                termination_state, _ = game.AI_play()
+            else:
+                termination_state, _ = agent.play_visual(previous_turn, game)
+
+            if termination_state == -1:
+                # print(game.state, game.winner)
+                wins += 1 if game.winner == agent.NNet_player else 0
+                looses += 1 if game.winner == agent.adversary else 0
+                ties += 1 if game.winner == 3 else 0
+                game.new_game()
+                break
+    print('After ', i_episode, ' games')
+    print('w: ', wins, ' l:', looses, ' t:', ties)
+
+
 def silent_training(game, agent, replay_memory):
     total_losses = []
     iteration = 0
@@ -239,8 +263,10 @@ agent.TargetNetwork.copy_from(agent.PolicyNetwork)
 if c.VISUAL:
     pygame_loop()
 
-if not c.VISUAL:
+if not c.VISUAL and c.TRAIN:
     silent_training(game, agent, replay_memory)
+else:
+    play_wo_training(game, agent)
 
 pyg.quit()
 

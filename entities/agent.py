@@ -91,7 +91,7 @@ class Agent:
 
     def get_exploration_rate(self):
         return c.eEND + (c.eSTART - c.eEND) * \
-               math.exp(-1. * self.current_step * c.eDECAY)
+               math.exp(-1 * self.current_step * c.eDECAY)
 
     @staticmethod
     def split_rowcol(action):

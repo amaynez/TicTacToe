@@ -1,9 +1,10 @@
 WIDTH = 480
 HEIGHT = 480
 FPS = 120
+VISUAL = False
+TRAIN = False
 RANDOM_AI = True
 NNET_PLAYER = 2
-VISUAL = False
 
 # Neural Network parameters
 INPUTS = 9
@@ -14,16 +15,16 @@ OUTPUT_ACTIVATION = 'Linear'
 
 # Reinforcement Learning parameters
 MEMORY_CAPACITY = 100000
-BATCH_SIZE = 64
+BATCH_SIZE = 256
 GAMMA = 0.99
 TARGET_UPDATE = 16
-NUM_EPISODES = 100000
+NUM_EPISODES = 10000
 
 # Cycling Learning Rate
-LEARNING_RATE = 0.001
-MAX_LR_FACTOR = 3
+LEARNING_RATE = 0.0001
+MAX_LR_FACTOR = 6
 LR_STEP_SIZE = BATCH_SIZE * 8
-LR_FACTOR = 8
+LR_FACTOR = 32
 
 # Learning Rate Range Test
 MAX_LR_RANGE_TEST = 0.1
@@ -37,7 +38,7 @@ REWARD_TIE_GAME = 1
 # epsilon greedy strategy
 eSTART = 1
 eEND = 0.01
-eDECAY = 0.01
+eDECAY = 0.001
 
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
