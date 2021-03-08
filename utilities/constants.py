@@ -18,9 +18,9 @@ ACTIVATION = 'ReLU'  # options: ReLU, sigmoid, linear
 OUTPUT_ACTIVATION = 'Linear'  # options: ReLU, sigmoid, linear
 
 # NNet Optimization
-NUM_EPISODES = 1000
+NUM_EPISODES = 10000
 BATCH_SIZE = 1024
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.003
 OPTIMIZATION = "ADAM"  # options: vanilla, SGD_momentum, NAG, RMSProp, ADAM
 ADAM_BIAS_Correction = False
 NAG_COEFF = 0.9
@@ -28,7 +28,6 @@ DECAY_RATE = 0.01
 GAMMA_OPT = 0.9
 BETA = 0.999
 EPSILON = math.pow(10, -8)
-
 
 # Cycling Learning Rate
 CLR_ON = True
