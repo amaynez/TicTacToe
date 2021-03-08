@@ -85,7 +85,10 @@ def pygame_loop():
                            round(c.HEIGHT / 20),
                            round(c.WIDTH / 20 * 3),
                            round(c.HEIGHT / 20 * 3)), 5, 8)
-            termination_state, sprite_params = agent.play_visual(previous_turn, game)
+            if c.PLAY_VS_AI:
+                termination_state, sprite_params = game.AI_play()
+            else:
+                termination_state, sprite_params = agent.play_visual(previous_turn, game)
             game.PLAY_SPRITES.append(PlayerSprite(sprite_params[0], sprite_params[1], sprite_params[2]))
             all_sprites.add(game.PLAY_SPRITES[-1])
             all_sprites.draw(screen)
@@ -181,7 +184,7 @@ def silent_training(game, agent, replay_memory):
             # If we have enough experiences, start optimizing
             if replay_memory.can_sample_memory(c.BATCH_SIZE):
                 experiences = replay_memory.sample(c.BATCH_SIZE)
-                loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience, iteration)
+                loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience, iteration, i_episode)
                 total_losses.append(loss)
                 # if len(total_losses) > 64:
                 #     last_losses = np.array(total_losses[-64:])

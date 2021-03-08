@@ -1,10 +1,13 @@
+import math
+
 WIDTH = 480
 HEIGHT = 480
 FPS = 120
 VISUAL = False
-TRAIN = False
+TRAIN = True
 RANDOM_AI = True
 NNET_PLAYER = 2
+PLAY_VS_AI = False
 
 # Neural Network parameters
 INPUTS = 9
@@ -15,30 +18,38 @@ OUTPUT_ACTIVATION = 'Linear'
 
 # Reinforcement Learning parameters
 MEMORY_CAPACITY = 100000
-BATCH_SIZE = 256
+BATCH_SIZE = 1024
 GAMMA = 0.99
-TARGET_UPDATE = 16
-NUM_EPISODES = 10000
+TARGET_UPDATE = 8
+NUM_EPISODES = 1000
 
 # Cycling Learning Rate
 LEARNING_RATE = 0.0001
 MAX_LR_FACTOR = 6
 LR_STEP_SIZE = BATCH_SIZE * 8
-LR_FACTOR = 32
+LR_FACTOR = 16
+
+# Optimization
+OPTIMIZATION = "ADAM"
+DECAY_RATE = 0.0
+GAMMA_OPT = 0.9
+BETA = 0.999
+EPSILON = math.pow(10, -8)
+NAG_COEFF = 0.999
 
 # Learning Rate Range Test
 MAX_LR_RANGE_TEST = 0.1
 
 # Reward Policy
-REWARD_BAD_CHOICE = -.5
-REWARD_LOST_GAME = -1
-REWARD_WON_GAME = 1
-REWARD_TIE_GAME = 1
+REWARD_BAD_CHOICE = -5
+REWARD_LOST_GAME = -5
+REWARD_WON_GAME = 5
+REWARD_TIE_GAME = 5
 
 # epsilon greedy strategy
 eSTART = 1
 eEND = 0.01
-eDECAY = 0.001
+eDECAY = 0.0001
 
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
