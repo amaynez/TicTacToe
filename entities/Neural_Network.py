@@ -185,27 +185,26 @@ class NeuralNetwork:
                                         results[-2].T)
         self.bias_gradients[-1] += (error[-1] * d_activation(results[-1], True))
 
-    def cyclic_learning_rate(self, iteration):
-        learning_rate = c.LEARNING_RATE / (1 + (iteration/c.LR_FACTOR))
+    @staticmethod
+    def cyclic_learning_rate(learning_rate, epoch):
         max_lr = learning_rate * c.MAX_LR_FACTOR
-        cycle = np.floor(1 + (iteration / (2 * c.LR_STEP_SIZE)))
-        x = np.abs((iteration / c.LR_STEP_SIZE) - (2 * cycle) + 1)
-        self.learning_rate = learning_rate + (max_lr - learning_rate) * np.maximum(0, (1 - x))
+        cycle = np.floor(1 + (epoch / (2 * c.LR_STEP_SIZE)))
+        x = np.abs((epoch / c.LR_STEP_SIZE) - (2 * cycle) + 1)
+        return learning_rate + (max_lr - learning_rate) * np.maximum(0, (1 - x))
 
     def apply_gradients(self, epoch):
         alpha = self.learning_rate * (1 / (1 + c.DECAY_RATE * epoch))
 
-        if c.OPTIMIZATION == 'classical':
+        if c.CLR_ON:
+            alpha = self.cyclic_learning_rate(alpha, epoch)
 
-            for idx, weight_col in enumerate(self.weights):
-                weight_col -= alpha * np.array(self.gradients[idx])/c.BATCH_SIZE
-                self.bias[idx] -= alpha * np.array(self.bias_gradients[idx])/c.BATCH_SIZE
+        for i, weight_col in enumerate(self.weights):
+            if c.OPTIMIZATION == 'vanilla':
+                weight_col -= alpha * np.array(self.gradients[i])/c.BATCH_SIZE
+                self.bias[i] -= alpha * np.array(self.bias_gradients[i])/c.BATCH_SIZE
 
-        elif c.OPTIMIZATION == 'NAG':
-            v_prev = {}
-            for i, weight_col in enumerate(self.weights):
-                v_prev["dW" + str(i)] = self.v["dW" + str(i)]
-                v_prev["db" + str(i)] = self.v["db" + str(i)]
+            elif c.OPTIMIZATION == 'NAG':
+                v_prev = {"dW" + str(i): self.v["dW" + str(i)], "db" + str(i): self.v["db" + str(i)]}
 
                 self.v["dW" + str(i)] = c.NAG_COEFF * self.v["dW" + str(i)] - alpha * np.array(self.gradients[i])
                 self.v["db" + str(i)] = c.NAG_COEFF * self.v["db" + str(i)] - alpha * np.array(self.bias_gradients[i])
@@ -213,24 +212,22 @@ class NeuralNetwork:
                 weight_col += (-1 * c.BETA * v_prev["dW" + str(i)]) + (1 + c.BETA) * self.v["dW" + str(i)]
                 self.bias[i] += (-1 * c.BETA * v_prev["db" + str(i)]) + (1 + c.BETA) * self.v["db" + str(i)]
 
-        elif c.OPTIMIZATION == 'momentum':
-            for i, weight_col in enumerate(self.weights):
+            elif c.OPTIMIZATION == 'SGD_momentum':
                 self.v["dW"+str(i)] = (c.GAMMA_OPT*self.v["dW" + str(i)]) + (alpha * np.array(self.gradients[i]))
                 self.v["db"+str(i)] = (c.GAMMA_OPT*self.v["db" + str(i)]) + (alpha * np.array(self.bias_gradients[i]))
 
                 weight_col -= self.v["dW" + str(i)]
                 self.bias[i] -= self.v["db" + str(i)]
 
-        elif c.OPTIMIZATION == 'rmsprop':
-            for i, weight_col in enumerate(self.weights):
+            elif c.OPTIMIZATION == 'RMSProp':
                 self.s["dW"+str(i)] = (c.BETA*self.s["dW"+str(i)])+((1-c.BETA)*(np.square(np.array(self.gradients[i]))))
                 self.s["db"+str(i)] = (c.BETA*self.s["db"+str(i)])+((1-c.BETA)*(np.square(np.array(self.bias_gradients[i]))))
 
                 weight_col -= (alpha*(np.array(self.gradients[i])/(np.sqrt(self.s["dW"+str(i)]+c.EPSILON))))
                 self.bias[i] -= (alpha*(np.array(self.bias_gradients[i])/(np.sqrt(self.s["db"+str(i)]+c.EPSILON))))
 
-        if c.OPTIMIZATION == "ADAM":
-            for i, weight_col in enumerate(self.weights):
+            if c.OPTIMIZATION == "ADAM":
+                # decaying averages of past gradients
                 self.v["dW" + str(i)] = \
                     (c.GAMMA_OPT * self.v["dW" + str(i)]) + \
                     ((1 - c.GAMMA_OPT) * np.array(self.gradients[i]))
@@ -238,6 +235,7 @@ class NeuralNetwork:
                     (c.GAMMA_OPT * self.v["db" + str(i)]) + \
                     ((1 - c.GAMMA_OPT) * np.array(self.bias_gradients[i]))
 
+                # decaying averages of past squared gradients
                 self.s["dW" + str(i)] = \
                     (c.BETA * self.s["dW"+str(i)]) + \
                     ((1 - c.BETA) * (np.square(np.array(self.gradients[i]))))
@@ -245,12 +243,20 @@ class NeuralNetwork:
                     (c.BETA * self.s["db" + str(i)]) + \
                     ((1 - c.BETA) * (np.square(np.array(self.bias_gradients[i]))))
 
-                weight_col -= (alpha * (self.v["dW" + str(i)] / (np.sqrt(self.s["dW" + str(i)] + c.EPSILON))))
-                self.bias[i] -= (alpha * (self.v["db" + str(i)] / (np.sqrt(self.s["db" + str(i)] + c.EPSILON))))
+                if c.ADAM_BIAS_Correction:
+                    # bias-corrected first and second moment estimates
+                    self.v["dW" + str(i)] = self.v["dW" + str(i)] / (1 - c.GAMMA_OPT)
+                    self.v["db" + str(i)] = self.v["db" + str(i)] / (1 - c.GAMMA_OPT)
+                    self.s["dW" + str(i)] = self.s["dW" + str(i)] / (1 - c.BETA)
+                    self.s["db" + str(i)] = self.s["db" + str(i)] / (1 - c.BETA)
+
+                # apply to weights and biases
+                weight_col -= (alpha * (self.v["dW" + str(i)] / (np.sqrt(self.s["dW" + str(i)]) + c.EPSILON)))
+                self.bias[i] -= (alpha * (self.v["db" + str(i)] / (np.sqrt(self.s["db" + str(i)]) + c.EPSILON)))
 
         self.gradient_zeros()
 
-    def RL_train(self, replay_memory, target_network, experience, iteration, epoch):
+    def RL_train(self, replay_memory, target_network, experience, iteration):
         loss = 0
         batch = experience(*zip(*replay_memory))
         states = np.array(batch.state)
@@ -284,27 +290,8 @@ class NeuralNetwork:
             self.calculate_gradient(state, targets)
 
         print('.', end='')
-        self.apply_gradients(epoch)
+        self.apply_gradients(iteration)
         return loss
-
-    def learning_rate_range_test(self, batch, target_nn, experience, iteration):
-        min_loss_gradient = math.inf
-        learning_rates = []
-        lr_multiplier = float(c.MAX_LR_RANGE_TEST) * float(c.LEARNING_RATE)
-        snapshot = NeuralNetwork(c.INPUTS, c.HIDDEN_LAYERS, c.OUTPUTS, c.LEARNING_RATE)
-        snapshot.copy_from(self)
-        while snapshot.learning_rate <= c.MAX_LR_RANGE_TEST:
-            loss = snapshot.RL_train(batch, target_nn, experience, iteration)
-            if math.isnan(loss) or loss > min_loss_gradient * 4:
-                self.model.stop_training = True
-                return
-            loss_derivative = self.loss_derivative(loss)
-            learning_rates.append((loss_derivative, snapshot.learning_rate))
-            min_loss_gradient = min(loss_derivative, min_loss_gradient)
-            snapshot.learning_rate *= lr_multiplier
-        best_lr = min(learning_rates[n_skip_beginning:-n_skip_end])[1]
-        c.LEARNING_RATE = best_lr[1]
-        return
 
     @staticmethod
     def loss_derivative(loss):

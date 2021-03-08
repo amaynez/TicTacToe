@@ -184,7 +184,7 @@ def silent_training(game, agent, replay_memory):
             # If we have enough experiences, start optimizing
             if replay_memory.can_sample_memory(c.BATCH_SIZE):
                 experiences = replay_memory.sample(c.BATCH_SIZE)
-                loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience, iteration, i_episode)
+                loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience, iteration)
                 total_losses.append(loss)
                 # if len(total_losses) > 64:
                 #     last_losses = np.array(total_losses[-64:])
