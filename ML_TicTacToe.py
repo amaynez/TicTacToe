@@ -162,6 +162,7 @@ def silent_training(game, agent, replay_memory):
     loss = 0
     total_illegal_moves = []
     wins = 0
+    wins_10games = 0
     looses = 0
     ties = 0
     game.new_game()
@@ -186,17 +187,11 @@ def silent_training(game, agent, replay_memory):
                 experiences = replay_memory.sample(c.BATCH_SIZE)
                 loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience, iteration)
                 total_losses.append(loss)
-                # if len(total_losses) > 64:
-                #     last_losses = np.array(total_losses[-64:])
-                #     if np.average(np.sign(round(np.diff(last_losses), 1))) < 0.1:
-                #         agent.PolicyNetwork.learning_rate_range_test(experiences,
-                #                                                      agent.TargetNetwork,
-                #                                                      experience,
-                #                                                      iteration)
 
             # if Game over, update counters and start a new game
             if termination_state == -1:
                 wins += 1 if game.winner == agent.NNet_player else 0
+                wins_10games += 1 if game.winner == agent.NNet_player else 0
                 looses += 1 if game.winner == agent.adversary else 0
                 ties += 1 if game.winner == 3 else 0
                 game.new_game()
@@ -204,12 +199,17 @@ def silent_training(game, agent, replay_memory):
 
         if i_episode % c.TARGET_UPDATE == 0:
             agent.TargetNetwork.copy_from(agent.PolicyNetwork)
-        print('\nEpisode: ', i_episode,
-              ';Illegal Moves: ', illegal_moves,
-              ';Loss: ', loss)
+
+        if i_episode % 9 == 0:
+            print('\nGame: ', i_episode,
+                  '| Illegal moves: ', illegal_moves,
+                  '| Loss: ', loss,
+                  '| Wins last 9 games:', wins_10games, '\n')
+            wins_10games = 0
+
         total_illegal_moves.append(illegal_moves)
 
-        if i_episode % 10000 == 0:
+        if i_episode % 1000 == 0:
             agent.PolicyNetwork.save_to_file()
 
     print('Total experiences recollected: ', len(replay_memory.memory))

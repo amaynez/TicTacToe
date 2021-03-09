@@ -193,12 +193,14 @@ class NeuralNetwork:
         return learning_rate + (max_lr - learning_rate) * np.maximum(0, (1 - x))
 
     def apply_gradients(self, epoch):
-
-        alpha = self.learning_rate * (1 / (1 + c.DECAY_RATE * epoch))
+        true_epoch = epoch - c.BATCH_SIZE
+        alpha = self.learning_rate * (1 / (1 + c.DECAY_RATE * true_epoch))
 
         if c.CLR_ON:
-            alpha = self.cyclic_learning_rate(alpha, epoch)
+            alpha = self.cyclic_learning_rate(alpha, true_epoch)
 
+        if epoch % 35 == 0:
+            print('epoch: ', true_epoch, '| LR:', alpha)
         for i, weight_col in enumerate(self.weights):
 
             if c.OPTIMIZATION == 'vanilla':
@@ -253,10 +255,10 @@ class NeuralNetwork:
 
                 if c.ADAM_BIAS_Correction:
                     # bias-corrected first and second moment estimates
-                    self.v["dW" + str(i)] = self.v["dW" + str(i)] / (1 - c.GAMMA_OPT)
-                    self.v["db" + str(i)] = self.v["db" + str(i)] / (1 - c.GAMMA_OPT)
-                    self.s["dW" + str(i)] = self.s["dW" + str(i)] / (1 - c.BETA)
-                    self.s["db" + str(i)] = self.s["db" + str(i)] / (1 - c.BETA)
+                    self.v["dW" + str(i)] = self.v["dW" + str(i)] / (1 - (c.GAMMA_OPT ** true_epoch))
+                    self.v["db" + str(i)] = self.v["db" + str(i)] / (1 - (c.GAMMA_OPT ** true_epoch))
+                    self.s["dW" + str(i)] = self.s["dW" + str(i)] / (1 - (c.BETA ** true_epoch))
+                    self.s["db" + str(i)] = self.s["db" + str(i)] / (1 - (c.BETA ** true_epoch))
 
                 # apply to weights and biases
                 weight_col -= ((alpha * (self.v["dW" + str(i)]
@@ -274,13 +276,18 @@ class NeuralNetwork:
         rewards = np.array(batch.reward)
         next_states = np.array(batch.next_state)
         eps = np.finfo(np.float32).eps.item()
-        rewards_normalized = (rewards - rewards.mean()) / (rewards.std() + eps)
+
+        if c.REWARD_NORMALIZATION:
+            rewards_normalized = (rewards - rewards.mean()) / (rewards.std() + eps)
+        else:
+            rewards_normalized = rewards
 
         for i in range(len(replay_memory)):
-            # calculate max_Q2
-            if rewards[i] in (c.REWARD_LOST_GAME, c.REWARD_WON_GAME, c.REWARD_TIE_GAME):
+            empty_cells = np.where(next_states[i] == 0)
+            if len(empty_cells[0]) == 0:
                 target_q = rewards_normalized[i]
             else:
+                # calculate max_Q2
                 next_state = next_states[i].reshape(c.INPUTS)
                 results_q2 = target_network.forward_propagation(next_state)
                 results_q2 = results_q2[0]
@@ -292,13 +299,13 @@ class NeuralNetwork:
             targets = self.forward_propagation(state)
             targets = targets[0]
             old_targets = targets.copy()
+            targets[actions[i], 0] = target_q
             for idx, position in enumerate(state):
                 if position != 0:
-                    targets[idx, 0] = 0
-            targets[actions[i], 0] = target_q
+                    targets[idx, 0] = -1
             loss += np.sum(((targets - old_targets)**2)/c.BATCH_SIZE)
             self.calculate_gradient(state, targets)
 
-        print('.', end='')
+        # print('.', end='')
         self.apply_gradients(iteration)
         return loss
