@@ -18,9 +18,9 @@ ACTIVATION = 'ReLU'  # options: ReLU, sigmoid, linear
 OUTPUT_ACTIVATION = 'Linear'  # options: ReLU, sigmoid, linear
 
 # NNet Optimization
-NUM_EPISODES = 10000
+NUM_EPISODES = 100000
 BATCH_SIZE = 64
-LEARNING_RATE = 0.000000001
+LEARNING_RATE = 0.00000000001
 OPTIMIZATION = "SGD_momentum"  # options: vanilla, SGD_momentum, NAG, RMSProp, ADAM
 ADAM_BIAS_Correction = True
 NAG_COEFF = 0.9
