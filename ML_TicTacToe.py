@@ -162,7 +162,7 @@ def silent_training(game, agent, replay_memory):
     loss = 0
     total_illegal_moves = []
     wins = 0
-    wins_10games = 0
+    total_wins = []
     looses = 0
     ties = 0
     game.new_game()
@@ -190,10 +190,13 @@ def silent_training(game, agent, replay_memory):
 
             # if Game over, update counters and start a new game
             if termination_state == -1:
-                wins += 1 if game.winner == agent.NNet_player else 0
-                wins_10games += 1 if game.winner == agent.NNet_player else 0
-                looses += 1 if game.winner == agent.adversary else 0
-                ties += 1 if game.winner == 3 else 0
+                if game.winner == agent.NNet_player:
+                    wins += 1
+                    total_wins.append(1)
+                else:
+                    looses += 1 if game.winner == agent.adversary else 0
+                    ties += 1 if game.winner == 3 else 0
+                    total_wins.append(0)
                 game.new_game()
                 break
 
@@ -201,25 +204,28 @@ def silent_training(game, agent, replay_memory):
             agent.TargetNetwork.copy_from(agent.PolicyNetwork)
 
         if i_episode % 9 == 0:
+            if len(total_wins) > 25:
+                win_pctg = np.sum(np.array(total_wins[-25:])) / len(total_wins[-25:])*100
+            else:
+                win_pctg = np.sum(np.array(total_wins)) / len(total_wins) * 100
+
             print('\nGame: ', i_episode,
                   '| Illegal moves: ', illegal_moves,
                   '| Loss: ', loss,
-                  '| Wins last 9 games:', wins_10games, '\n')
-            wins_10games = 0
+                  '| Win %:', str(win_pctg), '\n')
 
         total_illegal_moves.append(illegal_moves)
 
         if i_episode % 1000 == 0:
             agent.PolicyNetwork.save_to_file()
 
-    print('Total experiences recollected: ', len(replay_memory.memory))
     print('w: ', wins, ' l:', looses, ' t:', ties)
     agent.PolicyNetwork.save_to_file()
 
     fig = plt.figure()
     fig.canvas.set_window_title('Loss function across all episodes')
     fig.set_size_inches(11, 6)
-    axs1 = fig.add_subplot(2, 1, 1)
+    axs1 = fig.add_subplot(2, 2, 1)
     x = np.linspace(0, len(total_losses), len(total_losses))
     axs1.plot(x, total_losses, c='grey')
     moving_average_period = 64
@@ -228,7 +234,8 @@ def silent_training(game, agent, replay_memory):
     axs1.plot(x, ma, c='r')
     axs1.set_ylabel('Loss (squared error)', fontsize=10, color='.25')
     axs1.set_xlabel('Training Round', fontsize=10, color='.25')
-    axs2 = fig.add_subplot(2, 1, 2)
+
+    axs2 = fig.add_subplot(2, 2, 2)
     x2 = np.linspace(0, len(total_illegal_moves), len(total_illegal_moves))
     axs2.plot(x2, total_illegal_moves, c='grey')
     axs2.set_ylabel('Illegal Moves', fontsize=10, color='.25')
@@ -236,6 +243,14 @@ def silent_training(game, agent, replay_memory):
     ma2 = np.convolve(total_illegal_moves, np.ones(moving_average_period), 'valid') / moving_average_period
     ma2 = np.concatenate((total_illegal_moves[:moving_average_period-1], ma2))
     axs2.plot(x2, ma2, c='r')
+
+    axs3 = fig.add_subplot(2, 2, 3)
+    x3 = np.linspace(0, len(total_wins), len(total_wins))
+    ma3 = np.convolve(total_wins, np.ones(moving_average_period), 'valid') / moving_average_period * 100
+    ma3 = np.concatenate((total_illegal_moves[:moving_average_period-1], ma3))
+    axs3.set_ylabel('Win %', fontsize=10, color='.25')
+    axs3.set_xlabel('Episode', fontsize=10, color='.25')
+    axs3.plot(x3, ma3, c='r')
     plt.show()
 
 
@@ -268,7 +283,7 @@ if c.VISUAL:
 
 if not c.VISUAL and c.TRAIN:
     silent_training(game, agent, replay_memory)
-else:
+elif not c.VISUAL and not c.TRAIN:
     play_wo_training(game, agent)
 
 pyg.quit()
