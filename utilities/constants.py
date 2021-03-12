@@ -4,27 +4,27 @@ import math
 WIDTH = 480
 HEIGHT = 480
 FPS = 120
-VISUAL = True
+VISUAL = False
 PLAY_VS_AI = False
 NNET_PLAYER = 2
 
 # Neural Network parameters
-TRAIN = False
-RANDOM_AI = False
-INPUTS = 9
-HIDDEN_LAYERS = [200, 200]
-OUTPUTS = 9
+TRAIN = True
+RANDOM_AI = True
+INPUTS = 27
+HIDDEN_LAYERS = [130, 250, 140, 60]
 ACTIVATION = 'ReLU'  # options: ReLU, sigmoid, linear
+OUTPUTS = 9
 OUTPUT_ACTIVATION = 'Linear'  # options: ReLU, sigmoid, linear
 
 # NNet Optimization
-NUM_EPISODES = 10000
-BATCH_SIZE = 64
-LEARNING_RATE = 0.0000000000000001
-OPTIMIZATION = "RMSProp"  # options: vanilla, SGD_momentum, NAG, RMSProp, ADAM
+NUM_EPISODES = 1000000
+BATCH_SIZE = 54
+LEARNING_RATE = 0.000000001
+DECAY_RATE = 0.0001
+OPTIMIZATION = "SGD_momentum"  # options: vanilla, SGD_momentum, NAG, RMSProp, ADAM
 ADAM_BIAS_Correction = True
 NAG_COEFF = 0.9
-DECAY_RATE = 0.0001
 GAMMA_OPT = 0.9
 BETA = 0.999
 EPSILON = math.pow(10, -8)
@@ -37,12 +37,12 @@ LR_STEP_SIZE = BATCH_SIZE * 8
 # Reinforcement Learning parameters
 MEMORY_CAPACITY = 100000
 GAMMA = 1
-TARGET_UPDATE = 1000
+TARGET_UPDATE = 512
 
 # Reward Policy
-REWARD_BAD_CHOICE = 0
+REWARD_BAD_CHOICE = -2
 REWARD_LOST_GAME = -1
-REWARD_WON_GAME = 1
+REWARD_WON_GAME = 2
 REWARD_TIE_GAME = 1
 REWARD_NORMALIZATION = False
 
@@ -57,3 +57,23 @@ RED = (255, 0, 0)
 GREY = (185, 185, 185)
 YELLOW = (255, 255, 0)
 CYAN = (0, 255, 255)
+
+
+def one_hot(state):
+    one_hot_state = []
+    for row in state:
+        for cell in row:
+            if cell == 0:
+                one_hot_state.append(1)
+                one_hot_state.append(0)
+                one_hot_state.append(0)
+            elif cell == 1:
+                one_hot_state.append(0)
+                one_hot_state.append(1)
+                one_hot_state.append(0)
+            elif cell == 2:
+                one_hot_state.append(0)
+                one_hot_state.append(0)
+                one_hot_state.append(1)
+    return one_hot_state
+

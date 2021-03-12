@@ -163,6 +163,7 @@ class NeuralNetwork:
 
         # prepare the targets and inputs for matrix operations
         input_values = np.array(inputs)[np.newaxis].T
+        targets = np.array(targets)[np.newaxis].T
 
         # calculate the error (outputs vs targets), index 0
         error = [results[-1] - targets]
@@ -199,8 +200,8 @@ class NeuralNetwork:
         if c.CLR_ON:
             alpha = self.cyclic_learning_rate(alpha, true_epoch)
 
-        if epoch % 35 == 0:
-            print('epoch: ', true_epoch, '| LR:', alpha)
+        # if epoch % 35 == 0:
+        #     print('epoch: ', true_epoch, '| LR:', alpha)
         for i, weight_col in enumerate(self.weights):
 
             if c.OPTIMIZATION == 'vanilla':
@@ -288,24 +289,28 @@ class NeuralNetwork:
                 target_q = rewards_normalized[i]
             else:
                 # calculate max_Q2
-                next_state = next_states[i].reshape(c.INPUTS)
+                next_state = c.one_hot(next_states[i])
                 results_q2 = target_network.forward_propagation(next_state)
                 results_q2 = results_q2[0]
                 max_q2 = np.max(results_q2)
                 target_q = rewards_normalized[i] + c.GAMMA * max_q2
 
-            # form targets matrix
-            state = states[i].reshape(c.INPUTS)
-            targets = self.forward_propagation(state)
-            targets = targets[0]
-            old_targets = targets.copy()
-            targets[actions[i], 0] = target_q
-            for idx, position in enumerate(state):
-                if position != 0:
-                    targets[idx, 0] = -1
-            loss += np.sum(((targets - old_targets)**2)/c.BATCH_SIZE)
+            # form targets vector
+            state = c.one_hot(states[i])
+            old_targets = self.forward_propagation(state)
+            # targets = self.forward_propagation(state)
+            # targets = targets[0]
+            # targets[actions[i], 0] = target_q
+            # old_targets = targets.copy()
+            targets = np.zeros(9)
+            targets[actions[i]] = target_q
+            # for idx, position in enumerate(state):
+            #     if position != 0:
+            #         targets[idx, 0] = -1
+            # loss += np.sum(((targets - old_targets)**2)/c.BATCH_SIZE)
+            loss += (target_q - old_targets[0][actions[i]])**2/c.BATCH_SIZE
             self.calculate_gradient(state, targets)
 
-        # print('.', end='')
         self.apply_gradients(iteration)
         return loss
+

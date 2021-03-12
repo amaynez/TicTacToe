@@ -35,7 +35,7 @@ class Agent:
         termination_state = 0
         sprite_params = ()
         inputs = game.state
-        inputs = inputs.reshape(c.INPUTS)
+        inputs = c.one_hot(inputs)
         results = self.PolicyNetwork.forward_propagation(inputs)
         results = results[0]
         state_before_action = game.state.copy()
@@ -57,7 +57,7 @@ class Agent:
         termination_state = 0
         sprite_params = ()
         inputs = game.state
-        inputs = inputs.reshape(c.INPUTS)
+        inputs = c.one_hot(inputs)
         results = self.PolicyNetwork.forward_propagation(inputs)
         results = results[0]
         while previous_turn == game.turn:
@@ -77,7 +77,7 @@ class Agent:
             row, col = self.split_rowcol(action)
             random_move = 1
         else:
-            if np.max(results) > 0:
+            if np.max(results) > -math.inf:
                 action = np.argmax(results)
                 row, col = self.split_rowcol(action)
                 results[action] = -math.inf

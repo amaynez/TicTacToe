@@ -2,6 +2,7 @@ import numpy as np
 import random
 import utilities.constants as c
 
+
 class Game:
     def __init__(self):
         self.state = np.zeros((3, 3), np.int8)

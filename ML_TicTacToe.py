@@ -40,8 +40,6 @@ def pygame_loop():
     # Game loop
     running = True
     while running:
-        sprite_params = ()
-        termination_state = 0
         clock.tick(c.FPS)
         for event in pyg.event.get():
             if event.type == pyg.QUIT:
@@ -136,6 +134,7 @@ def play_wo_training(game, agent):
     wins = 0
     looses = 0
     ties = 0
+    i_episode = 0
     game.new_game()
     for i_episode in range(c.NUM_EPISODES):
         for _ in count():
@@ -159,7 +158,7 @@ def play_wo_training(game, agent):
 def silent_training(game, agent, replay_memory):
     total_losses = []
     iteration = 0
-    loss = 0
+    loss = [0]
     total_illegal_moves = []
     wins = 0
     total_wins = []
@@ -182,12 +181,6 @@ def silent_training(game, agent, replay_memory):
                 termination_state, _, illegal_moves =\
                     agent.play(previous_turn, game, replay_memory, experience, illegal_moves)
 
-            # If we have enough experiences, start optimizing
-            if replay_memory.can_sample_memory(c.BATCH_SIZE):
-                experiences = replay_memory.sample(c.BATCH_SIZE)
-                loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience, iteration)
-                total_losses.append(loss)
-
             # if Game over, update counters and start a new game
             if termination_state == -1:
                 if game.winner == agent.NNet_player:
@@ -200,10 +193,16 @@ def silent_training(game, agent, replay_memory):
                 game.new_game()
                 break
 
+        # If we have enough experiences, start optimizing
+        if replay_memory.can_sample_memory(c.BATCH_SIZE):
+            experiences = replay_memory.sample(c.BATCH_SIZE)
+            loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience, iteration)
+            total_losses.append(loss[0])
+
         if i_episode % c.TARGET_UPDATE == 0:
             agent.TargetNetwork.copy_from(agent.PolicyNetwork)
 
-        if i_episode % 9 == 0:
+        if i_episode % 27 == 0:
             if len(total_wins) > 25:
                 win_pctg = np.sum(np.array(total_wins[-25:])) / len(total_wins[-25:])*100
             else:
@@ -211,7 +210,7 @@ def silent_training(game, agent, replay_memory):
 
             print('\nGame: ', i_episode,
                   '| Illegal moves: ', illegal_moves,
-                  '| Loss: ', loss,
+                  '| Loss: ', loss[0],
                   '| Win %:', str(win_pctg), '\n')
 
         total_illegal_moves.append(illegal_moves)
@@ -287,4 +286,3 @@ elif not c.VISUAL and not c.TRAIN:
     play_wo_training(game, agent)
 
 pyg.quit()
-
