@@ -12,17 +12,17 @@ NNET_PLAYER = 2
 TRAIN = True
 RANDOM_AI = True
 INPUTS = 27
-HIDDEN_LAYERS = [130, 250, 140, 60]
-ACTIVATION = 'ReLU'  # options: ReLU, sigmoid, linear
+HIDDEN_LAYERS = [81, 81, 54, 27]
+ACTIVATION = 'sigmoid'  # options: ReLU, sigmoid, linear
 OUTPUTS = 9
 OUTPUT_ACTIVATION = 'Linear'  # options: ReLU, sigmoid, linear
 
 # NNet Optimization
-NUM_EPISODES = 1000000
-BATCH_SIZE = 54
-LEARNING_RATE = 0.000000001
+NUM_EPISODES = 2000
+BATCH_SIZE = 64
+LEARNING_RATE = 0.0000001
 DECAY_RATE = 0.0001
-OPTIMIZATION = "SGD_momentum"  # options: vanilla, SGD_momentum, NAG, RMSProp, ADAM
+OPTIMIZATION = "ADAM"  # options: vanilla, SGD_momentum, NAG, RMSProp, ADAM
 ADAM_BIAS_Correction = True
 NAG_COEFF = 0.9
 GAMMA_OPT = 0.9
@@ -40,10 +40,10 @@ GAMMA = 1
 TARGET_UPDATE = 512
 
 # Reward Policy
-REWARD_BAD_CHOICE = -2
-REWARD_LOST_GAME = -1
-REWARD_WON_GAME = 2
-REWARD_TIE_GAME = 1
+REWARD_BAD_CHOICE = -10
+REWARD_LOST_GAME = -10
+REWARD_WON_GAME = 10
+REWARD_TIE_GAME = 5
 REWARD_NORMALIZATION = False
 
 # epsilon greedy strategy

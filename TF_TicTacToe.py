@@ -2,7 +2,7 @@ import pygame as pyg
 import math
 import sys
 from utilities import constants as c
-from entities import Memory, Game, agent
+from entities import Memory, Game, TF_agent
 from recordtype import recordtype
 from itertools import count
 import matplotlib.pyplot as plt
@@ -196,11 +196,11 @@ def silent_training(game, agent, replay_memory):
         # If we have enough experiences, start optimizing
         if replay_memory.can_sample_memory(c.BATCH_SIZE):
             experiences = replay_memory.sample(c.BATCH_SIZE)
-            loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience, iteration)
-            total_losses.append(loss[0])
+            loss, accuracy = agent.RL_train(experiences, agent.TargetNetwork, experience, iteration)
+            total_losses.append(loss)
 
         if i_episode % c.TARGET_UPDATE == 0:
-            agent.TargetNetwork.copy_from(agent.PolicyNetwork)
+            agent.copy_target_network()
 
         if i_episode % 27 == 0:
             if len(total_wins) > 25:
@@ -210,16 +210,16 @@ def silent_training(game, agent, replay_memory):
 
             print('\nGame: ', i_episode,
                   '| Illegal moves: ', illegal_moves,
-                  '| Loss: ', loss[0],
+                  '| Loss: ', loss,
                   '| Win %:', str(win_pctg), '\n')
 
         total_illegal_moves.append(illegal_moves)
 
         if i_episode % 1000 == 0 and i_episode > 900:
-            agent.PolicyNetwork.save_to_file()
+            agent.save_to_file()
 
     print('w: ', wins, ' l:', looses, ' t:', ties)
-    agent.PolicyNetwork.save_to_file()
+    agent.save_to_file()
 
     fig = plt.figure()
     fig.canvas.set_window_title('Loss function across all episodes')
@@ -272,10 +272,8 @@ game = Game.Game()
 
 # create neural network
 experience = recordtype('experience', 'state action reward next_state')
-agent = agent.Agent(c.INPUTS, c.HIDDEN_LAYERS, c.OUTPUTS, c.LEARNING_RATE)
+agent = TF_agent.Agent(c.INPUTS, c.HIDDEN_LAYERS, c.OUTPUTS, c.LEARNING_RATE)
 replay_memory = Memory.ReplayMemory(c.MEMORY_CAPACITY)
-agent.PolicyNetwork.load_from_file()
-agent.TargetNetwork.copy_from(agent.PolicyNetwork)
 
 if c.VISUAL:
     pygame_loop()
