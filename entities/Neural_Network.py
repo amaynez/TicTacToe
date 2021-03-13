@@ -2,6 +2,7 @@ import numpy as np
 import json
 from utilities import json_numpy
 import utilities.constants as c
+import random
 
 
 def activation(x, output=False):
@@ -272,6 +273,8 @@ class NeuralNetwork:
 
     def RL_train(self, replay_memory, target_network, experience, iteration):
         loss = 0
+        states_to_train = []
+        targets_to_train = []
         batch = experience(*zip(*replay_memory))
         states = np.array(batch.state)
         actions = np.array(batch.action)
@@ -302,9 +305,16 @@ class NeuralNetwork:
             targets = targets[0]
             old_targets = targets.copy()
             targets[actions[i], 0] = target_q
-            loss += (np.sum((targets - old_targets) ** 2) / len(targets)) / c.BATCH_SIZE
-            self.calculate_gradient(state, targets)
+            loss += (np.sum((targets - old_targets) ** 2) / len(targets)) / (c.BATCH_SIZE * c.EPOCHS)
+            states_to_train.append(state)
+            targets_to_train.append(targets)
 
-        self.apply_gradients(iteration)
+        for i in range(c.EPOCHS):
+            states_to_train_batch = random.sample(states_to_train, c.BATCH_SIZE)
+            targets_to_train_batch = random.sample(targets_to_train, c.BATCH_SIZE)
+            for j in range(c.BATCH_SIZE):
+                self.calculate_gradient(states_to_train_batch[j], targets_to_train_batch[j])
+            self.apply_gradients(iteration)
+
         return loss
 

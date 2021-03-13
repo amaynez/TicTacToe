@@ -136,7 +136,7 @@ def play_wo_training(game, agent):
     ties = 0
     i_episode = 0
     game.new_game()
-    for i_episode in range(c.NUM_EPISODES):
+    for i_episode in range(c.NUM_GAMES):
         for _ in count():
             previous_turn = game.turn
             if game.turn == agent.adversary:
@@ -165,7 +165,7 @@ def silent_training(game, agent, replay_memory):
     looses = 0
     ties = 0
     game.new_game()
-    for i_episode in range(c.NUM_EPISODES):
+    for i_episode in range(c.NUM_GAMES):
         illegal_moves = 0
         for _ in count():
             iteration += 1
@@ -194,8 +194,8 @@ def silent_training(game, agent, replay_memory):
                 break
 
         # If we have enough experiences, start optimizing
-        if replay_memory.can_sample_memory(c.BATCH_SIZE):
-            experiences = replay_memory.sample(c.BATCH_SIZE)
+        if replay_memory.can_sample_memory(c.BATCH_SIZE * c.EPOCHS):
+            experiences = replay_memory.sample(c.BATCH_SIZE * c.EPOCHS)
             loss = agent.PolicyNetwork.RL_train(experiences, agent.TargetNetwork, experience, iteration)
             total_losses.append(loss[0])
 
