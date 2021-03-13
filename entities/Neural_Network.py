@@ -302,7 +302,7 @@ class NeuralNetwork:
             targets = targets[0]
             old_targets = targets.copy()
             targets[actions[i], 0] = target_q
-            loss += (target_q - old_targets[actions[i]])**2/c.BATCH_SIZE
+            loss += (np.sum((targets - old_targets) ** 2) / len(targets)) / c.BATCH_SIZE
             self.calculate_gradient(state, targets)
 
         self.apply_gradients(iteration)
