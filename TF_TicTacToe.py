@@ -136,7 +136,7 @@ def play_wo_training(game, agent):
     ties = 0
     i_episode = 0
     game.new_game()
-    for i_episode in range(c.NUM_EPISODES):
+    for i_episode in range(c.NUM_GAMES):
         for _ in count():
             previous_turn = game.turn
             if game.turn == agent.adversary:
@@ -166,7 +166,7 @@ def silent_training(game, agent, replay_memory):
     looses = 0
     ties = 0
     game.new_game()
-    for i_episode in range(c.NUM_EPISODES):
+    for i_episode in range(c.NUM_GAMES):
         illegal_moves = 0
         for _ in count():
             iteration += 1
@@ -195,20 +195,19 @@ def silent_training(game, agent, replay_memory):
                 break
 
         # If we have enough experiences, start optimizing
-        if replay_memory.can_sample_memory(c.BATCH_SIZE):
-            experiences = replay_memory.sample(c.BATCH_SIZE)
-            print(i_episode, end='')
+        if replay_memory.can_sample_memory(c.BATCH_SIZE * c.EPOCHS):
+            experiences = replay_memory.sample(c.BATCH_SIZE * c.EPOCHS)
+            print('|-', i_episode, '------|')
             history = agent.RL_train(experiences, experience)
-            total_losses.append(history.history['loss'][0])
-            total_accuracy.append(history.history['accuracy'][0])
+            for value in history.history['loss']:
+                total_losses.append(value)
+            for value in history.history['accuracy']:
+                total_accuracy.append(value)
 
         if i_episode % c.TARGET_UPDATE == 0:
             agent.copy_target_network()
 
         total_illegal_moves.append(illegal_moves)
-
-        if i_episode % 1000 == 0 and i_episode > 900:
-            agent.save_to_file()
 
     print('\nw: ', wins, ' l:', looses, ' t:', ties)
     agent.save_to_file()
@@ -220,9 +219,6 @@ def silent_training(game, agent, replay_memory):
     x = np.linspace(0, len(total_losses), len(total_losses))
     axs1.plot(x, total_losses, c='grey')
     moving_average_period = c.BATCH_SIZE
-    ma = np.convolve(total_losses, np.ones(moving_average_period), 'valid') / moving_average_period
-    ma = np.concatenate((total_losses[:moving_average_period-1], ma))
-    axs1.plot(x, ma, c='r')
     axs1.set_ylabel('Loss (mean squared error)', fontsize=10, color='.25')
     axs1.set_xlabel('Training Round', fontsize=10, color='.25')
 

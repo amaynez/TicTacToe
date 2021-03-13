@@ -5,6 +5,9 @@ from utilities import constants as c
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.models import load_model
+from keras.callbacks import ReduceLROnPlateau
+from keras.optimizers import Adam
+import time
 
 
 class Agent:
@@ -19,7 +22,12 @@ class Agent:
         self.PolicyNetwork.add(Dense(outputs,
                                      kernel_initializer='random_uniform',
                                      bias_initializer='zeros'))
-        self.PolicyNetwork.compile(optimizer='adam',
+        opt = Adam(learning_rate=c.LEARNING_RATE,
+                   beta_1=c.GAMMA_OPT,
+                   beta_2=c.BETA,
+                   epsilon=c.EPSILON,
+                   amsgrad=False)
+        self.PolicyNetwork.compile(optimizer=opt,
                                    loss='mean_squared_error',
                                    metrics=['accuracy'])
         try:
@@ -38,7 +46,7 @@ class Agent:
         self.TargetNetwork.add(Dense(outputs,
                                      kernel_initializer='random_uniform',
                                      bias_initializer='zeros'))
-        self.TargetNetwork.compile(optimizer='adam',
+        self.TargetNetwork.compile(optimizer=opt,
                                    loss='mean_squared_error',
                                    metrics=['accuracy'])
         self.copy_target_network()
@@ -57,19 +65,37 @@ class Agent:
         termination_state = 0
         sprite_params = ()
         inputs = game.state
+        ti = time.perf_counter()
         inputs = c.one_hot(inputs)
+        tf = time.perf_counter()
+        print('One Hot INPUTS: ', tf - ti)
+        ti = time.perf_counter()
         results = self.PolicyNetwork.predict(np.asarray([inputs]), batch_size=1)[0]
+        tf = time.perf_counter()
+        print('Q Network Predict (Inputs): ', tf - ti)
         state_before_action = game.state.copy()
         while previous_turn == game.turn:
+            ti = time.perf_counter()
             action, row, col, random_move = self.eGreedyStrategy(results, game)
+            tf = time.perf_counter()
+            print('eGreedyStrategy: ', tf - ti)
+            ti = time.perf_counter()
             termination_state, sprite_params = game.new_play(row, col)
+            tf = time.perf_counter()
+            print('Game.New Play: ', tf - ti)
+            ti = time.perf_counter()
             reward = self.calculate_reward(previous_turn, game.turn, game.winner)
+            tf = time.perf_counter()
+            print('Calculate Reward: ', tf - ti)
+            ti = time.perf_counter()
             replay_memory.push(
                 experience(
                     state_before_action,
                     action,
                     reward,
                     game.state.copy()))
+            tf = time.perf_counter()
+            print('Replay Memory Push: ', tf - ti)
             if previous_turn == game.turn and random_move == 0:
                 illegal_moves += 1
         return termination_state, sprite_params, illegal_moves
@@ -138,14 +164,19 @@ class Agent:
         return 0
 
     def RL_train(self, replay_memory, experience):
-        loss = 0
         states_to_train = []
         targets_to_train = []
+        ti = time.perf_counter()
         batch = experience(*zip(*replay_memory))
+        tf = time.perf_counter()
+        print('batch zip *: ', tf - ti)
+        ti = time.perf_counter()
         states = np.array(batch.state)
         actions = np.array(batch.action)
         rewards = np.array(batch.reward)
         next_states = np.array(batch.next_state)
+        tf = time.perf_counter()
+        print('batch to arrays: ', tf - ti)
         eps = np.finfo(np.float32).eps.item()
 
         if c.REWARD_NORMALIZATION:
@@ -154,7 +185,11 @@ class Agent:
             rewards_normalized = rewards
 
         for i in range(len(replay_memory)):
+            ti = time.perf_counter()
             empty_cells = np.where(next_states[i] == 0)
+            tf = time.perf_counter()
+            print('empty cells in a state: ', tf - ti)
+            ti = time.perf_counter()
             if len(empty_cells[0]) == 0:
                 target_q = rewards_normalized[i]
             else:
@@ -163,18 +198,28 @@ class Agent:
                 results_q2 = self.TargetNetwork.predict(np.asarray([next_state]), batch_size=1)[0]
                 max_q2 = np.max(results_q2)
                 target_q = rewards_normalized[i] + c.GAMMA * max_q2
-
+            tf = time.perf_counter()
+            print('get Q2 and max Q2 into target Q: ', tf - ti)
             # form targets vector
+            ti = time.perf_counter()
             state = c.one_hot(states[i])
+            tf = time.perf_counter()
+            print('One Hot States: ', tf - ti)
+            ti = time.perf_counter()
             targets = self.PolicyNetwork.predict(np.asarray([state]), batch_size=1)[0]
+            tf = time.perf_counter()
+            print('Q Network Predict: ', tf - ti)
             targets[actions[i]] = target_q
             states_to_train.append(state)
             targets_to_train.append(targets)
 
+        reduce_lr_on_plateau = ReduceLROnPlateau(monitor='loss', factor=0.1, patience=25)
         history = self.PolicyNetwork.fit(np.asarray(states_to_train),
                                          np.asarray(targets_to_train),
-                                         epochs=1,
+                                         epochs=c.EPOCHS,
                                          batch_size=c.BATCH_SIZE,
-                                         verbose=2)
+                                         verbose=1,
+                                         callbacks=[reduce_lr_on_plateau],
+                                         shuffle=True)
         self.save_to_file()
         return history
