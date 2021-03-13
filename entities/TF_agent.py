@@ -2,15 +2,13 @@ import numpy as np
 import random
 import math
 from utilities import constants as c
-import tensorflow as tf
 from keras.models import Sequential
-from keras.layers import Dense, Flatten
+from keras.layers import Dense
 from keras.models import load_model
-from keras import optimizers
 
 
 class Agent:
-    def __init__(self, inputs, hidden_layers, outputs, learning_rate, **kwargs):
+    def __init__(self, inputs, hidden_layers, outputs):
         self.PolicyNetwork = Sequential()
         for layer in hidden_layers:
             self.PolicyNetwork.add(Dense(units=layer,
@@ -139,7 +137,7 @@ class Agent:
             return c.REWARD_TIE_GAME
         return 0
 
-    def RL_train(self, replay_memory, target_network, experience, iteration):
+    def RL_train(self, replay_memory, experience):
         loss = 0
         states_to_train = []
         targets_to_train = []
@@ -169,17 +167,14 @@ class Agent:
             # form targets vector
             state = c.one_hot(states[i])
             targets = self.PolicyNetwork.predict(np.asarray([state]), batch_size=1)[0]
-            old_targets = targets.copy()
             targets[actions[i]] = target_q
-            loss += (target_q - old_targets[actions[i]]) ** 2 / c.BATCH_SIZE
             states_to_train.append(state)
             targets_to_train.append(targets)
 
-        accuracy = self.PolicyNetwork.fit(np.asarray(states_to_train),
-                                          np.asarray(targets_to_train),
-                                          epochs=1,
-                                          batch_size=c.BATCH_SIZE,
-                                          verbose=1)
+        history = self.PolicyNetwork.fit(np.asarray(states_to_train),
+                                         np.asarray(targets_to_train),
+                                         epochs=1,
+                                         batch_size=c.BATCH_SIZE,
+                                         verbose=2)
         self.save_to_file()
-        print(iteration, '| self calculated loss:', loss)
-        return loss, accuracy
+        return history

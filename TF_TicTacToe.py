@@ -157,6 +157,7 @@ def play_wo_training(game, agent):
 
 def silent_training(game, agent, replay_memory):
     total_losses = []
+    total_accuracy = []
     iteration = 0
     loss = [0]
     total_illegal_moves = []
@@ -196,42 +197,33 @@ def silent_training(game, agent, replay_memory):
         # If we have enough experiences, start optimizing
         if replay_memory.can_sample_memory(c.BATCH_SIZE):
             experiences = replay_memory.sample(c.BATCH_SIZE)
-            loss, accuracy = agent.RL_train(experiences, agent.TargetNetwork, experience, iteration)
-            total_losses.append(loss)
+            print(i_episode, end='')
+            history = agent.RL_train(experiences, experience)
+            total_losses.append(history.history['loss'][0])
+            total_accuracy.append(history.history['accuracy'][0])
 
         if i_episode % c.TARGET_UPDATE == 0:
             agent.copy_target_network()
-
-        if i_episode % 27 == 0:
-            if len(total_wins) > 25:
-                win_pctg = np.sum(np.array(total_wins[-25:])) / len(total_wins[-25:])*100
-            else:
-                win_pctg = np.sum(np.array(total_wins)) / len(total_wins) * 100
-
-            print('\nGame: ', i_episode,
-                  '| Illegal moves: ', illegal_moves,
-                  '| Loss: ', loss,
-                  '| Win %:', str(win_pctg), '\n')
 
         total_illegal_moves.append(illegal_moves)
 
         if i_episode % 1000 == 0 and i_episode > 900:
             agent.save_to_file()
 
-    print('w: ', wins, ' l:', looses, ' t:', ties)
+    print('\nw: ', wins, ' l:', looses, ' t:', ties)
     agent.save_to_file()
 
     fig = plt.figure()
-    fig.canvas.set_window_title('Loss function across all episodes')
+    fig.canvas.set_window_title('Results')
     fig.set_size_inches(11, 6)
     axs1 = fig.add_subplot(2, 2, 1)
     x = np.linspace(0, len(total_losses), len(total_losses))
     axs1.plot(x, total_losses, c='grey')
-    moving_average_period = 64
+    moving_average_period = c.BATCH_SIZE
     ma = np.convolve(total_losses, np.ones(moving_average_period), 'valid') / moving_average_period
     ma = np.concatenate((total_losses[:moving_average_period-1], ma))
     axs1.plot(x, ma, c='r')
-    axs1.set_ylabel('Loss (squared error)', fontsize=10, color='.25')
+    axs1.set_ylabel('Loss (mean squared error)', fontsize=10, color='.25')
     axs1.set_xlabel('Training Round', fontsize=10, color='.25')
 
     axs2 = fig.add_subplot(2, 2, 2)
@@ -250,6 +242,13 @@ def silent_training(game, agent, replay_memory):
     axs3.set_ylabel('Win %', fontsize=10, color='.25')
     axs3.set_xlabel('Episode', fontsize=10, color='.25')
     axs3.plot(x3, ma3, c='r')
+
+    axs4 = fig.add_subplot(2, 2, 4)
+    x4 = np.linspace(0, len(total_accuracy), len(total_accuracy))
+    axs4.set_ylabel('Accuracy', fontsize=10, color='.25')
+    axs4.set_xlabel('Episode', fontsize=10, color='.25')
+    axs4.plot(x4, total_accuracy, c='r')
+
     plt.show()
 
 
@@ -272,7 +271,7 @@ game = Game.Game()
 
 # create neural network
 experience = recordtype('experience', 'state action reward next_state')
-agent = TF_agent.Agent(c.INPUTS, c.HIDDEN_LAYERS, c.OUTPUTS, c.LEARNING_RATE)
+agent = TF_agent.Agent(c.INPUTS, c.HIDDEN_LAYERS, c.OUTPUTS)
 replay_memory = Memory.ReplayMemory(c.MEMORY_CAPACITY)
 
 if c.VISUAL:

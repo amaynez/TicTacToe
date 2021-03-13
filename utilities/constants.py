@@ -12,15 +12,15 @@ NNET_PLAYER = 2
 TRAIN = True
 RANDOM_AI = True
 INPUTS = 27
-HIDDEN_LAYERS = [81, 81, 54, 27]
-ACTIVATION = 'sigmoid'  # options: ReLU, sigmoid, linear
+HIDDEN_LAYERS = [130, 250, 140, 60]
+ACTIVATION = 'ReLU'  # options: ReLU, sigmoid, linear
 OUTPUTS = 9
 OUTPUT_ACTIVATION = 'Linear'  # options: ReLU, sigmoid, linear
 
 # NNet Optimization
 NUM_EPISODES = 2000
-BATCH_SIZE = 64
-LEARNING_RATE = 0.0000001
+BATCH_SIZE = 81
+LEARNING_RATE = 0.001
 DECAY_RATE = 0.0001
 OPTIMIZATION = "ADAM"  # options: vanilla, SGD_momentum, NAG, RMSProp, ADAM
 ADAM_BIAS_Correction = True
@@ -36,11 +36,11 @@ LR_STEP_SIZE = BATCH_SIZE * 8
 
 # Reinforcement Learning parameters
 MEMORY_CAPACITY = 100000
-GAMMA = 1
+GAMMA = 0.9
 TARGET_UPDATE = 512
 
 # Reward Policy
-REWARD_BAD_CHOICE = -10
+REWARD_BAD_CHOICE = -15
 REWARD_LOST_GAME = -10
 REWARD_WON_GAME = 10
 REWARD_TIE_GAME = 5
