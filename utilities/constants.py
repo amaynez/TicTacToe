@@ -19,9 +19,9 @@ OUTPUT_ACTIVATION = 'Linear'  # options: ReLU, sigmoid, linear
 
 # NNet Optimization
 NUM_GAMES = 2000
-EPOCHS = 10
-BATCH_SIZE = 81
-LEARNING_RATE = 0.0001
+EPOCHS = 20
+BATCH_SIZE = 64
+LEARNING_RATE = 0.0000001
 DECAY_RATE = 0.0001
 OPTIMIZATION = "ADAM"  # options: vanilla, SGD_momentum, NAG, RMSProp, ADAM
 ADAM_BIAS_Correction = True
@@ -38,7 +38,7 @@ LR_STEP_SIZE = BATCH_SIZE * 8
 # Reinforcement Learning parameters
 MEMORY_CAPACITY = 1000000
 GAMMA = 0.9
-TARGET_UPDATE = 27
+TARGET_UPDATE = 100
 
 # Reward Policy
 REWARD_BAD_CHOICE = -15
