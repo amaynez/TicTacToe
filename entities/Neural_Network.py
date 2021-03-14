@@ -216,9 +216,9 @@ class NeuralNetwork:
                 self.bias[i] -= alpha * np.array(self.bias_gradients[i]) / c.BATCH_SIZE
 
             elif c.OPTIMIZATION == 'SGD_momentum':
-                self.v["dW"+str(i)] = ((c.GAMMA_OPT*self.v["dW" + str(i)])
+                self.v["dW"+str(i)] = ((c.BETA1 * self.v["dW" + str(i)])
                                        + (alpha * np.array(self.gradients[i])))
-                self.v["db"+str(i)] = ((c.GAMMA_OPT*self.v["db" + str(i)])
+                self.v["db"+str(i)] = ((c.BETA1 * self.v["db" + str(i)])
                                        + (alpha * np.array(self.bias_gradients[i])))
 
                 weight_col -= self.v["dW" + str(i)] / c.BATCH_SIZE
@@ -232,16 +232,16 @@ class NeuralNetwork:
                 self.v["db" + str(i)] = (c.NAG_COEFF * self.v["db" + str(i)]
                                          - alpha * np.array(self.bias_gradients[i]))
 
-                weight_col += ((-1 * c.BETA * v_prev["dW" + str(i)])
-                               + (1 + c.BETA) * self.v["dW" + str(i)]) / c.BATCH_SIZE
-                self.bias[i] += ((-1 * c.BETA * v_prev["db" + str(i)])
-                                 + (1 + c.BETA) * self.v["db" + str(i)]) / c.BATCH_SIZE
+                weight_col += ((-1 * c.BETA2 * v_prev["dW" + str(i)])
+                               + (1 + c.BETA2) * self.v["dW" + str(i)]) / c.BATCH_SIZE
+                self.bias[i] += ((-1 * c.BETA2 * v_prev["db" + str(i)])
+                                 + (1 + c.BETA2) * self.v["db" + str(i)]) / c.BATCH_SIZE
 
             elif c.OPTIMIZATION == 'RMSProp':
-                self.s["dW" + str(i)] = ((c.BETA * self.s["dW" + str(i)])
-                                         + ((1-c.BETA) * (np.square(np.array(self.gradients[i])))))
-                self.s["db" + str(i)] = ((c.BETA * self.s["db" + str(i)])
-                                         + ((1-c.BETA) * (np.square(np.array(self.bias_gradients[i])))))
+                self.s["dW" + str(i)] = ((c.BETA2 * self.s["dW" + str(i)])
+                                         + ((1 - c.BETA2) * (np.square(np.array(self.gradients[i])))))
+                self.s["db" + str(i)] = ((c.BETA2 * self.s["db" + str(i)])
+                                         + ((1 - c.BETA2) * (np.square(np.array(self.bias_gradients[i])))))
 
                 weight_col -= (alpha*(np.array(self.gradients[i])
                                       / (np.sqrt(self.s["dW"+str(i)]+c.EPSILON)))) / c.BATCH_SIZE
@@ -250,23 +250,23 @@ class NeuralNetwork:
 
             if c.OPTIMIZATION == "ADAM":
                 # decaying averages of past gradients
-                self.v["dW" + str(i)] = ((c.GAMMA_OPT * self.v["dW" + str(i)])
-                                         + ((1 - c.GAMMA_OPT) * np.array(self.gradients[i])))
-                self.v["db" + str(i)] = ((c.GAMMA_OPT * self.v["db" + str(i)])
-                                         + ((1 - c.GAMMA_OPT) * np.array(self.bias_gradients[i])))
+                self.v["dW" + str(i)] = ((c.BETA1 * self.v["dW" + str(i)])
+                                         + ((1 - c.BETA1) * np.array(self.gradients[i])))
+                self.v["db" + str(i)] = ((c.BETA1 * self.v["db" + str(i)])
+                                         + ((1 - c.BETA1) * np.array(self.bias_gradients[i])))
 
                 # decaying averages of past squared gradients
-                self.s["dW" + str(i)] = ((c.BETA * self.s["dW"+str(i)])
-                                         + ((1 - c.BETA) * (np.square(np.array(self.gradients[i])))))
-                self.s["db" + str(i)] = ((c.BETA * self.s["db" + str(i)])
-                                         + ((1 - c.BETA) * (np.square(np.array(self.bias_gradients[i])))))
+                self.s["dW" + str(i)] = ((c.BETA2 * self.s["dW" + str(i)])
+                                         + ((1 - c.BETA2) * (np.square(np.array(self.gradients[i])))))
+                self.s["db" + str(i)] = ((c.BETA2 * self.s["db" + str(i)])
+                                         + ((1 - c.BETA2) * (np.square(np.array(self.bias_gradients[i])))))
 
                 if c.ADAM_BIAS_Correction:
                     # bias-corrected first and second moment estimates
-                    self.v["dW" + str(i)] = self.v["dW" + str(i)] / (1 - (c.GAMMA_OPT ** true_epoch))
-                    self.v["db" + str(i)] = self.v["db" + str(i)] / (1 - (c.GAMMA_OPT ** true_epoch))
-                    self.s["dW" + str(i)] = self.s["dW" + str(i)] / (1 - (c.BETA ** true_epoch))
-                    self.s["db" + str(i)] = self.s["db" + str(i)] / (1 - (c.BETA ** true_epoch))
+                    self.v["dW" + str(i)] = self.v["dW" + str(i)] / (1 - (c.BETA1 ** true_epoch))
+                    self.v["db" + str(i)] = self.v["db" + str(i)] / (1 - (c.BETA1 ** true_epoch))
+                    self.s["dW" + str(i)] = self.s["dW" + str(i)] / (1 - (c.BETA2 ** true_epoch))
+                    self.s["db" + str(i)] = self.s["db" + str(i)] / (1 - (c.BETA2 ** true_epoch))
 
                 # apply to weights and biases
                 weight_col -= ((alpha * (self.v["dW" + str(i)]

@@ -26,8 +26,8 @@ DECAY_RATE = 0.0001
 OPTIMIZATION = "ADAM"  # options: vanilla, SGD_momentum, NAG, RMSProp, ADAM
 ADAM_BIAS_Correction = True
 NAG_COEFF = 0.9
-GAMMA_OPT = 0.9
-BETA = 0.999
+BETA1 = 0.9
+BETA2 = 0.999
 EPSILON = math.pow(10, -8)
 
 # Cycling Learning Rate

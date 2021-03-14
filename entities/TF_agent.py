@@ -22,8 +22,8 @@ class Agent:
                                      kernel_initializer='random_uniform',
                                      bias_initializer='zeros'))
         opt = Adam(learning_rate=c.LEARNING_RATE,
-                   beta_1=c.GAMMA_OPT,
-                   beta_2=c.BETA,
+                   beta_1=c.BETA1,
+                   beta_2=c.BETA2,
                    epsilon=c.EPSILON,
                    amsgrad=False)
         self.PolicyNetwork.compile(optimizer=opt,
