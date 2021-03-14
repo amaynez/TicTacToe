@@ -3,6 +3,7 @@ import json
 from utilities import json_numpy
 import utilities.constants as c
 import random
+import time
 
 
 def activation(x, output=False):
@@ -169,6 +170,8 @@ class NeuralNetwork:
         # calculate the error (outputs vs targets), index 0
         error = [(results[-1] - targets) / c.BATCH_SIZE]
 
+        loss = (np.sum((targets - results[-1]) ** 2) / len(targets))
+
         # calculate the error of the hidden layers from last to first but insert in the correct order
         for idx in range(len(results) - 2, -1, -1):
             error.insert(0, np.matmul(self.weights[idx + 1].T, error[0]))
@@ -186,6 +189,8 @@ class NeuralNetwork:
         self.gradients[-1] += np.matmul((error[-1] * d_activation(results[-1], True)),
                                         results[-2].T)
         self.bias_gradients[-1] += (error[-1] * d_activation(results[-1], True))
+
+        return loss
 
     @staticmethod
     def cyclic_learning_rate(learning_rate, epoch):
@@ -310,11 +315,15 @@ class NeuralNetwork:
             targets_to_train.append(targets)
 
         for i in range(c.EPOCHS):
+            ti = time.perf_counter()
+            loss2 = 0
             states_to_train_batch = random.sample(states_to_train, c.BATCH_SIZE)
             targets_to_train_batch = random.sample(targets_to_train, c.BATCH_SIZE)
             for j in range(c.BATCH_SIZE):
-                self.calculate_gradient(states_to_train_batch[j], targets_to_train_batch[j])
+                loss2 += self.calculate_gradient(states_to_train_batch[j], targets_to_train_batch[j])
             self.apply_gradients(iteration)
+            tf = time.perf_counter()
+            print('Epoch ', i, '/', c.EPOCHS, f"{tf - ti:0.4f}s", ' - loss: ', loss2/c.BATCH_SIZE)
 
         return loss
 
