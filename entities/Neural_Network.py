@@ -5,7 +5,6 @@ import utilities.constants as c
 import random
 import time
 
-
 def activation(x, output=False):
     activation_function = c.OUTPUT_ACTIVATION if output else c.ACTIVATION
     if activation_function in ['sigmoid', 'Sigmoid', 'SIGMOID']:
@@ -15,7 +14,6 @@ def activation(x, output=False):
     elif activation_function in ['linear', 'Linear', 'line']:
         return x
 
-
 def d_activation(x, output=False):
     activation_function = c.OUTPUT_ACTIVATION if output else c.ACTIVATION
     if activation_function in ['sigmoid', 'Sigmoid', 'SIGMOID']:
@@ -24,7 +22,6 @@ def d_activation(x, output=False):
         return 1 * (x > 0)
     elif activation_function in ['linear', 'Linear', 'line']:
         return np.ones_like(x)
-
 
 class NeuralNetwork:
     def __init__(self, inputs, hidden, outputs, learning_rate=0.1):
@@ -201,25 +198,25 @@ class NeuralNetwork:
 
     def apply_gradients(self, epoch):
         true_epoch = epoch - c.BATCH_SIZE
-        alpha = self.learning_rate * (1 / (1 + c.DECAY_RATE * true_epoch))
+        eta = self.learning_rate * (1 / (1 + c.DECAY_RATE * true_epoch))
 
         if c.CLR_ON:
-            alpha = self.cyclic_learning_rate(alpha, true_epoch)
+            eta = self.cyclic_learning_rate(eta, true_epoch)
 
         if epoch % 100 == 0:
-            print('epoch: ', true_epoch, '| LR:', alpha)
+            print('epoch: ', true_epoch, '| LR:', eta)
 
         for i, weight_col in enumerate(self.weights):
 
             if c.OPTIMIZATION == 'vanilla':
-                weight_col -= alpha * np.array(self.gradients[i]) / c.BATCH_SIZE
-                self.bias[i] -= alpha * np.array(self.bias_gradients[i]) / c.BATCH_SIZE
+                weight_col -= eta * np.array(self.gradients[i]) / c.BATCH_SIZE
+                self.bias[i] -= eta * np.array(self.bias_gradients[i]) / c.BATCH_SIZE
 
             elif c.OPTIMIZATION == 'SGD_momentum':
-                self.v["dW"+str(i)] = ((c.BETA1 * self.v["dW" + str(i)])
-                                       + (alpha * np.array(self.gradients[i])))
-                self.v["db"+str(i)] = ((c.BETA1 * self.v["db" + str(i)])
-                                       + (alpha * np.array(self.bias_gradients[i])))
+                self.v["dW" + str(i)] = ((c.BETA1 * self.v["dW" + str(i)])
+                                         + (eta * np.array(self.gradients[i])))
+                self.v["db" + str(i)] = ((c.BETA1 * self.v["db" + str(i)])
+                                         + (eta * np.array(self.bias_gradients[i])))
 
                 weight_col -= self.v["dW" + str(i)] / c.BATCH_SIZE
                 self.bias[i] -= self.v["db" + str(i)] / c.BATCH_SIZE
@@ -228,25 +225,25 @@ class NeuralNetwork:
                 v_prev = {"dW" + str(i): self.v["dW" + str(i)], "db" + str(i): self.v["db" + str(i)]}
 
                 self.v["dW" + str(i)] = (c.NAG_COEFF * self.v["dW" + str(i)]
-                                         - alpha * np.array(self.gradients[i]))
+                                         - eta * np.array(self.gradients[i]))
                 self.v["db" + str(i)] = (c.NAG_COEFF * self.v["db" + str(i)]
-                                         - alpha * np.array(self.bias_gradients[i]))
+                                         - eta * np.array(self.bias_gradients[i]))
 
-                weight_col += ((-1 * c.BETA2 * v_prev["dW" + str(i)])
-                               + (1 + c.BETA2) * self.v["dW" + str(i)]) / c.BATCH_SIZE
-                self.bias[i] += ((-1 * c.BETA2 * v_prev["db" + str(i)])
-                                 + (1 + c.BETA2) * self.v["db" + str(i)]) / c.BATCH_SIZE
+                weight_col += -1 * ((c.BETA1 * v_prev["dW" + str(i)])
+                                    + (1 + c.BETA1) * self.v["dW" + str(i)]) / c.BATCH_SIZE
+                self.bias[i] += ((-1 * c.BETA1 * v_prev["db" + str(i)])
+                                 + (1 + c.BETA1) * self.v["db" + str(i)]) / c.BATCH_SIZE
 
             elif c.OPTIMIZATION == 'RMSProp':
-                self.s["dW" + str(i)] = ((c.BETA2 * self.s["dW" + str(i)])
-                                         + ((1 - c.BETA2) * (np.square(np.array(self.gradients[i])))))
-                self.s["db" + str(i)] = ((c.BETA2 * self.s["db" + str(i)])
-                                         + ((1 - c.BETA2) * (np.square(np.array(self.bias_gradients[i])))))
+                self.s["dW" + str(i)] = ((c.BETA1 * self.s["dW" + str(i)])
+                                         + ((1 - c.BETA1) * (np.square(np.array(self.gradients[i])))))
+                self.s["db" + str(i)] = ((c.BETA1 * self.s["db" + str(i)])
+                                         + ((1 - c.BETA1) * (np.square(np.array(self.bias_gradients[i])))))
 
-                weight_col -= (alpha*(np.array(self.gradients[i])
-                                      / (np.sqrt(self.s["dW"+str(i)]+c.EPSILON)))) / c.BATCH_SIZE
-                self.bias[i] -= (alpha*(np.array(self.bias_gradients[i])
-                                        / (np.sqrt(self.s["db"+str(i)]+c.EPSILON)))) / c.BATCH_SIZE
+                weight_col -= (eta * (np.array(self.gradients[i])
+                                      / (np.sqrt(self.s["dW" + str(i)] + c.EPSILON)))) / c.BATCH_SIZE
+                self.bias[i] -= (eta * (np.array(self.bias_gradients[i])
+                                        / (np.sqrt(self.s["db" + str(i)] + c.EPSILON)))) / c.BATCH_SIZE
 
             if c.OPTIMIZATION == "ADAM":
                 # decaying averages of past gradients
@@ -269,10 +266,10 @@ class NeuralNetwork:
                     self.s["db" + str(i)] = self.s["db" + str(i)] / (1 - (c.BETA2 ** true_epoch))
 
                 # apply to weights and biases
-                weight_col -= ((alpha * (self.v["dW" + str(i)]
-                                         / (np.sqrt(self.s["dW" + str(i)]) + c.EPSILON)))) / c.BATCH_SIZE
-                self.bias[i] -= ((alpha * (self.v["db" + str(i)]
-                                           / (np.sqrt(self.s["db" + str(i)]) + c.EPSILON)))) / c.BATCH_SIZE
+                weight_col -= ((eta * (self.v["dW" + str(i)]
+                                       / (np.sqrt(self.s["dW" + str(i)]) + c.EPSILON)))) / c.BATCH_SIZE
+                self.bias[i] -= ((eta * (self.v["db" + str(i)]
+                                         / (np.sqrt(self.s["db" + str(i)]) + c.EPSILON)))) / c.BATCH_SIZE
 
         self.gradient_zeros()
 
@@ -323,7 +320,6 @@ class NeuralNetwork:
                 loss2 += self.calculate_gradient(states_to_train_batch[j], targets_to_train_batch[j])
             self.apply_gradients(iteration)
             tf = time.perf_counter()
-            print('Epoch ', i, '/', c.EPOCHS, f"{tf - ti:0.4f}s", ' - loss: ', loss2/c.BATCH_SIZE)
+            print('Epoch ', i, '/', c.EPOCHS, f"{tf - ti:0.4f}s", ' - loss: ', loss2 / c.BATCH_SIZE)
 
         return loss
-
