@@ -4,13 +4,13 @@ import math
 WIDTH = 480
 HEIGHT = 480
 FPS = 120
-VISUAL = False
-PLAY_VS_AI = False
+VISUAL = True
+HUMAN_VS_AI = True
 NNET_PLAYER = 2
 
 # Neural Network parameters
-TRAIN = True
-RANDOM_AI = True
+TRAIN = False
+AI_ENGINE = 'hardcode'  # options: random, minimax, hardcode
 INPUTS = 27
 HIDDEN_LAYERS = [130, 250, 140, 60]
 ACTIVATION = 'ReLU'  # options: ReLU, sigmoid, linear

@@ -83,7 +83,7 @@ def pygame_loop():
                            round(c.HEIGHT / 20),
                            round(c.WIDTH / 20 * 3),
                            round(c.HEIGHT / 20 * 3)), 5, 8)
-            if c.PLAY_VS_AI:
+            if c.HUMAN_VS_AI:
                 termination_state, sprite_params = game.AI_play()
             else:
                 termination_state, sprite_params = agent.play_visual(previous_turn, game)
