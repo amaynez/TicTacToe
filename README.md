@@ -14,8 +14,14 @@
 This program implements a PyGame TicTacToe that can be played by two humans, by a human vs. an algorithmic AI, and a human vs. a Neural Network trained by playing against the algorithmic AI.
 
 The training algorithm uses Deep Mind's DQN recommendations:
-- A replay experience memory was implemented capped at 250,000 experiences
+- A replay experience memory was implemented
 - Batches of random experiences from the replay memory are used for every training round
 - A secondary neural network was used to calculate the future Q values and then it was updated with the main network's weights every 10 games
+
+**OwnNNet_TicTacTow.py** is the main program that uses the ML library I created.
+
+**TF_TicTacToe.py** is the version that uses TensorFlow (I used to validate my code)
+
+**PlainGame_noNNet.py** is a version with just the plain game.
 
 For more information: https://amaynez.github.io/deep-q-learning-tic-tac-toe/
