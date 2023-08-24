@@ -24,4 +24,4 @@ The training algorithm uses Deep Mind's DQN recommendations:
 
 **PlainGame_noNNet.py** is a version with just the plain game.
 
-For more information: https://amaynez.github.io/deep-q-learning-tic-tac-toe/
+For more Information: https://the-mvm.github.io/deep-q-learning-tic-tac-toe.html
